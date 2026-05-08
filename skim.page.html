@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>skim.page — TL;DR, your way.</title>
+  <meta name="description" content="Add skim.page/ in front of any article URL. Pick a lens. Get your TL;DR in ChatGPT instantly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #E8390E;
+      --accent-dim: rgba(232, 57, 14, 0.08);
+      --black: #111;
+      --mid: #888;
+      --light: #E0E0E0;
+      --bg: #fff;
+      --code-bg: #F7F7F5;
+      --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--black);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 48px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--light);
+    }
+
+    .nav-logo {
+      font-family: 'DM Mono', monospace;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--black);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+
+    .nav-logo .dot { color: var(--accent); transition: color var(--transition); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-link {
+      font-size: 13px;
+      color: var(--mid);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+    .nav-link:hover { color: var(--black); }
+
+    .nav-badge {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      color: #fff;
+      background: var(--accent);
+      padding: 4px 10px;
+      border-radius: 2px;
+      transition: background var(--transition);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 160px 48px 100px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: #fff;
+      background: var(--accent);
+      padding: 4px 10px;
+      border-radius: 2px;
+      margin-bottom: 24px;
+      transition: background var(--transition);
+    }
+
+    .hero-headline {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(52px, 7vw, 84px);
+      font-weight: 400;
+      line-height: 1.0;
+      color: var(--black);
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .hero-headline em {
+      font-style: italic;
+      color: var(--accent);
+      transition: color var(--transition);
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      color: var(--mid);
+      line-height: 1.65;
+      max-width: 480px;
+      margin-bottom: 40px;
+    }
+
+    .hero-sub code {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      background: #F2F2F0;
+      border: 1px solid var(--light);
+      padding: 2px 7px;
+      border-radius: 3px;
+      color: var(--black);
+    }
+
+    .hero-demo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      border: 1.5px solid var(--black);
+      border-radius: 3px;
+      overflow: hidden;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+    }
+
+    .hero-demo-accent {
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 16px;
+      transition: background var(--transition);
+    }
+
+    .hero-demo-url {
+      color: var(--mid);
+      padding: 10px 16px;
+      background: #fff;
+    }
+
+    /* ── STATS ── */
+    .stats {
+      border-top: 1px solid var(--light);
+      border-bottom: 1px solid var(--light);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 36px 24px;
+      border-right: 1px solid var(--light);
+    }
+    .stat:last-child { border-right: none; }
+
+    .stat-num {
+      font-family: 'Instrument Serif', serif;
+      font-size: 48px;
+      font-weight: 400;
+      color: var(--accent);
+      line-height: 1;
+      transition: color var(--transition);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--mid);
+      margin-top: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── LENSES ── */
+    .lenses-section {
+      padding: 100px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--mid);
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .lens-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .lens-tab {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px 22px;
+      border-radius: 3px;
+      border: 1px solid var(--light);
+      background: #fff;
+      color: var(--mid);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+      letter-spacing: 0.01em;
+    }
+
+    .lens-tab:hover {
+      border-color: #bbb;
+      color: var(--black);
+    }
+
+    .lens-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .lens-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--accent);
+      transition: color var(--transition);
+    }
+
+    .lens-desc {
+      font-size: 13px;
+      color: var(--mid);
+    }
+
+    .prompt-block {
+      background: var(--code-bg);
+      border: 1px solid #E8E8E8;
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: 24px 28px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: #444;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+      transition: border-left-color var(--transition);
+    }
+
+    .prompt-url {
+      color: var(--accent);
+      transition: color var(--transition);
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how-section {
+      background: #F8F8F6;
+      border-top: 1px solid var(--light);
+      border-bottom: 1px solid var(--light);
+      padding: 100px 48px;
+    }
+
+    .how-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .how-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      margin-top: 40px;
+    }
+
+    .how-step {
+      padding: 0 36px 0 0;
+      border-right: 1px solid var(--light);
+    }
+    .how-step:last-child { border-right: none; padding-right: 0; padding-left: 36px; }
+    .how-step:nth-child(2) { padding: 0 36px; }
+
+    .step-num {
+      font-family: 'Instrument Serif', serif;
+      font-size: 48px;
+      font-weight: 400;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 12px;
+      transition: color var(--transition);
+    }
+
+    .step-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--black);
+      margin-bottom: 8px;
+    }
+
+    .step-body {
+      font-size: 13px;
+      color: var(--mid);
+      line-height: 1.65;
+    }
+
+    .step-body code {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      background: #ECECEA;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: var(--black);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 40px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .footer-logo {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--mid);
+    }
+    .footer-logo span { color: var(--accent); transition: color var(--transition); }
+
+    .footer-note {
+      font-size: 12px;
+      color: #bbb;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-eyebrow { animation: fadeUp 0.5s ease both; animation-delay: 0.05s; }
+    .hero-headline { animation: fadeUp 0.5s ease both; animation-delay: 0.15s; }
+    .hero-sub      { animation: fadeUp 0.5s ease both; animation-delay: 0.25s; }
+    .hero-demo     { animation: fadeUp 0.5s ease both; animation-delay: 0.35s; }
+
+    /* ── MOBILE ── */
+    @media (max-width: 640px) {
+      nav { padding: 16px 24px; }
+      .nav-right { gap: 16px; }
+      .hero { padding: 120px 24px 80px; }
+      .lenses-section, .how-inner { padding-left: 24px; padding-right: 24px; }
+      .how-section { padding: 80px 24px; }
+      .how-steps { grid-template-columns: 1fr; gap: 36px; }
+      .how-step, .how-step:nth-child(2), .how-step:last-child { border: none; padding: 0; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { border-right: none; border-bottom: 1px solid var(--light); }
+      .stat:last-child { border-bottom: none; }
+      footer { flex-direction: column; gap: 12px; text-align: center; padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">skim<span class="dot">.</span>page</a>
+    <div class="nav-right">
+      <a href="#how" class="nav-link">How it works</a>
+      <a href="#lenses" class="nav-link">Lenses</a>
+      <span class="nav-badge" id="nav-badge">BETA</span>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow" id="hero-eyebrow">READ SMARTER</div>
+    <h1 class="hero-headline">TL;DR,<br><em id="hero-em">your way.</em></h1>
+    <p class="hero-sub">
+      Add <code>skim.page/</code> in front of any article URL in your browser.
+      Pick a lens. Get your summary in ChatGPT instantly — no sign-up, no app.
+    </p>
+    <div class="hero-demo">
+      <span class="hero-demo-accent" id="demo-accent">skim.page/investor</span>
+      <span class="hero-demo-url">?url=nytimes.com/…</span>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num accent-color">0</div>
+      <div class="stat-label">lines of code to run</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num accent-color">4</div>
+      <div class="stat-label">reading lenses</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" style="color: var(--black);">∞</div>
+      <div class="stat-label">URLs supported</div>
+    </div>
+  </div>
+
+  <!-- LENSES -->
+  <section class="lenses-section" id="lenses">
+    <p class="section-label">Reading lenses</p>
+    <div class="lens-tabs" id="lens-tabs">
+      <button class="lens-tab" data-lens="default" onclick="setLens('default')">Default</button>
+      <button class="lens-tab" data-lens="investor" onclick="setLens('investor')">Investor</button>
+      <button class="lens-tab" data-lens="research" onclick="setLens('research')">Research</button>
+      <button class="lens-tab" data-lens="eli5" onclick="setLens('eli5')">ELI5</button>
+    </div>
+    <div class="lens-meta">
+      <div class="lens-title" id="lens-title">Default</div>
+      <div class="lens-desc" id="lens-desc">General-purpose summary</div>
+    </div>
+    <div class="prompt-block" id="prompt-block"></div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section" id="how">
+    <div class="how-inner">
+      <p class="section-label">How it works</p>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="step-num accent-color">1</div>
+          <div class="step-title">Find any article</div>
+          <div class="step-body">Open any news article, blog post, or long-read in your browser.</div>
+        </div>
+        <div class="how-step">
+          <div class="step-num accent-color">2</div>
+          <div class="step-title">Prepend the URL</div>
+          <div class="step-body">Add <code>skim.page/</code> — or a lens like <code>skim.page/investor</code> — to the start of the URL.</div>
+        </div>
+        <div class="how-step">
+          <div class="step-num accent-color">3</div>
+          <div class="step-title">Get your TL;DR</div>
+          <div class="step-body">ChatGPT opens with your lens prompt pre-filled. Hit send. Done.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">skim<span>.</span>page</div>
+    <div class="footer-note">Opens ChatGPT · No account needed · Free forever</div>
+  </footer>
+
+  <script>
+    const lenses = {
+      default: {
+        color: '#E8390E',
+        title: 'Default',
+        desc: 'General-purpose summary',
+        demoSuffix: '',
+        prompt: `Please summarize the following article clearly and concisely.
+
+Cover:
+- The main topic or event
+- Key points and takeaways
+- Any important context or background
+- The conclusion or outcome
+
+Keep it brief — 150 to 200 words. No fluff.
+
+Article URL: {URL}`
+      },
+      investor: {
+        color: '#1D6AE8',
+        title: 'Investor',
+        desc: 'Market & financial lens',
+        demoSuffix: '/investor',
+        prompt: `Read this article through an investor's lens.
+
+Extract and summarize:
+- Market opportunity or risk mentioned
+- Companies, sectors, or assets involved
+- Financial signals, metrics, or forecasts
+- Potential impact on portfolios or valuations
+- Bull / bear takeaways in one line each
+
+Be direct. Skip editorial commentary.
+
+Article URL: {URL}`
+      },
+      research: {
+        color: '#0F8A5F',
+        title: 'Research',
+        desc: 'Structured academic analysis',
+        demoSuffix: '/research',
+        prompt: `Analyze this article as a research assistant.
+
+Provide:
+- Core thesis or claim being made
+- Evidence and sources cited
+- Methodology (if applicable)
+- Gaps, limitations, or counterarguments
+- How this fits into the broader literature or discourse
+
+Format as a structured research brief.
+
+Article URL: {URL}`
+      },
+      eli5: {
+        color: '#9333EA',
+        title: 'ELI5',
+        desc: 'Plain language, no jargon',
+        demoSuffix: '/eli5',
+        prompt: `Explain this article like I'm 5 years old.
+
+Use:
+- Simple words only (no jargon)
+- Short sentences
+- A fun analogy or two if it helps
+- Max 100 words
+
+Make it so a curious 10-year-old would totally get it.
+
+Article URL: {URL}`
+      }
+    };
+
+    function setLens(key) {
+      const lens = lenses[key];
+
+      // Update CSS variable
+      document.documentElement.style.setProperty('--accent', lens.color);
+
+      // Prompt block
+      const pb = document.getElementById('prompt-block');
+      pb.textContent = lens.prompt;
+
+      // Lens meta
+      document.getElementById('lens-title').textContent = lens.title;
+      document.getElementById('lens-desc').textContent = lens.desc;
+
+      // Demo bar
+      document.getElementById('demo-accent').textContent = 'skim.page' + lens.demoSuffix;
+
+      // Tabs
+      document.querySelectorAll('.lens-tab').forEach(btn => {
+        const isActive = btn.dataset.lens === key;
+        btn.style.background = isActive ? lens.color : '#fff';
+        btn.style.color = isActive ? '#fff' : '#888';
+        btn.style.borderColor = isActive ? lens.color : '#E0E0E0';
+      });
+    }
+
+    // Init
+    setLens('default');
+  </script>
+</body>
+</html>
