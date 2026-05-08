@@ -502,22 +502,44 @@ nav.nav-scrolled {
 
 .popup-alert {
   display: flex;
-  gap: 8px;
-  max-width: 720px;
-  margin: 0 0 18px;
-  padding: 12px 14px;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 0 28px;
+  padding: 16px 18px;
   border: 1px solid var(--accent);
-  border-left-width: 4px;
+  border-left-width: 6px;
   border-radius: 4px;
   background: var(--accent-dim);
   color: var(--black);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.55;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.06);
 }
 
 .popup-alert strong {
-  flex: 0 0 auto;
+  display: inline;
   font-weight: 700;
+}
+
+.popup-alert-top {
+  margin-top: -18px;
+}
+
+.popup-alert-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'DM Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .result-prompt {

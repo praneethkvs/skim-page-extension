@@ -374,6 +374,19 @@ function PromptFallback({ request }: PromptFallbackProps) {
   return (
     <main className="result-page">
       <section className="result-section">
+        <div className="popup-alert popup-alert-top" role="status">
+          <span className="popup-alert-mark" aria-hidden="true">
+            !
+          </span>
+          <div>
+            <strong>{popupBlocked ? 'Pop-up blocked.' : 'Opening automatically.'}</strong>
+            <span>
+              {popupBlocked
+                ? ` Allow pop-ups and redirects for skim.page once, then ${provider.label} will open automatically next time.`
+                : ` If ${provider.label} does not open, allow pop-ups and redirects for skim.page once.`}
+            </span>
+          </div>
+        </div>
         <p className="section-label">Generated prompt</p>
         <div className="lens-meta">
           <div className="lens-title">{lens.title}</div>
@@ -384,14 +397,6 @@ function PromptFallback({ request }: PromptFallbackProps) {
           <strong>{provider.label}</strong>
         </div>
         <p className="provider-note">{provider.note}</p>
-        <div className="popup-alert" role="status">
-          <strong>{popupBlocked ? 'Pop-up blocked.' : 'Opening automatically.'}</strong>
-          <span>
-            {popupBlocked
-              ? ` Allow pop-ups and redirects for skim.page once, then ${provider.label} will open automatically next time.`
-              : ` If ${provider.label} does not open, allow pop-ups and redirects for skim.page once.`}
-          </span>
-        </div>
         <p className="result-url">{request.articleUrl}</p>
         <div className="prompt-block result-prompt" ref={promptRef}>
           {request.prompt}
