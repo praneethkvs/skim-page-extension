@@ -68,9 +68,6 @@ function Nav() {
         <a href="/#how" className="nav-link">
           How it works
         </a>
-        <a href="/#lenses" className="nav-link">
-          Lenses
-        </a>
       </div>
     </nav>
   );
@@ -135,7 +132,7 @@ function LandingPage({
       <div className="landing-grid">
         <section className="hero">
           <div className="hero-eyebrow" id="hero-eyebrow">
-            READ SMARTER
+            {activeLens.eyebrow}
           </div>
           <h1 className="hero-headline">
             TL;DR,
@@ -143,8 +140,8 @@ function LandingPage({
             <em id="hero-em">your way.</em>
           </h1>
           <p className="hero-sub">
-            Add <code>{skimPrefix}</code> in front of any article URL in your browser. Use the
-            default summary, or pick a lens when you want a specific angle.
+            Just add <code>{skimPrefix}</code> in front of any article URL in your browser. 
+            Optionally, pick your preferred provider and pick a lens when you want a specific angle.
           </p>
           <div className="hero-demo">
             <span className="hero-demo-accent" id="demo-accent">
@@ -178,15 +175,11 @@ function LandingPage({
                     aria-pressed={isActive}
                   >
                     <span className={isActive ? 'provider-dot provider-dot-active' : 'provider-dot'} />
-                    {provider.label}
+                    {formatProviderTabLabel(providerId)}
                   </button>
                 );
               })}
             </div>
-            <p className="provider-current">
-              This link will open in {activeProvider.label}
-              {activeProviderId === DEFAULT_PROVIDER_ID ? ' (default).' : '.'}
-            </p>
           </div>
           <p className="section-label lens-label">Optional: Choose your Lens</p>
           <div className="lens-tabs" id="lens-tabs">
@@ -207,7 +200,7 @@ function LandingPage({
                   }}
                   type="button"
                 >
-                  {lens.title}
+                  {formatLensTabLabel(lens)}
                 </button>
               );
             })}
@@ -241,28 +234,31 @@ function LandingPage({
               <div className="step-num accent-color">2</div>
               <div className="step-title">Prepend the URL</div>
               <div className="step-body">
-                Add <code>skim.page/</code> to the start of the URL. Optionally, pick a provider
-                with <code>skim.page/cl/</code>, pick a lens with <code>skim.page/i/</code>, or
-                both with <code>skim.page/gr/e/</code>.
+                Just add <code>skim.page/</code> to the start of the URL. <br /><br />
+                Optionally,<br /> pick provider:{' '} 
+                <code>skim.page/cl/</code>  <br />
+                pick lens:{' '} <code>skim.page/i/</code> <br /> 
+                or both:{' '} <code>skim.page/cl/i/</code>.
+                 <br /> 
               </div>
               <div className="shortcut-reference" aria-label="URL shortcuts">
+                <div className="shortcut-note">Use the shortcut or full name.</div>
                 <div className="shortcut-group">
                   <div className="shortcut-title">Providers</div>
                   <div className="shortcut-badges">
-                    <span><strong>ch</strong> ChatGPT</span>
-                    <span><strong>cl</strong> Claude</span>
+                    <span>ChatGPT (default)</span>
                     <span><strong>ge</strong> Gemini</span>
-                    <span><strong>gr</strong> Grok</span>
+                    <span><strong>cl</strong> Claude</span>
                     <span><strong>px</strong> Perplexity</span>
+                    <span><strong>gr</strong> Grok</span>
                   </div>
                 </div>
                 <div className="shortcut-group">
                   <div className="shortcut-title">Lens</div>
                   <div className="shortcut-badges">
-                    <span><strong>/</strong> Default</span>
-                    <span><strong>i</strong> Investor</span>
-                    <span><strong>r</strong> Research</span>
                     <span><strong>e</strong> ELI5</span>
+                    <span><strong>r</strong> Research</span>
+                    <span><strong>i</strong> Investor</span>
                   </div>
                 </div>
               </div>
@@ -293,6 +289,24 @@ function buildSkimPrefix(providerId: ProviderId, lensId: LensId): string {
   const lensSuffix = lenses[lensId].demoSuffix;
 
   return `skim.page${providerPrefix}${lensSuffix}/`;
+}
+
+function formatLensTabLabel(lens: (typeof lenses)[LensId]): string {
+  if (!lens.shortAlias) {
+    return lens.title;
+  }
+
+  return `${lens.title} (${lens.shortAlias})`;
+}
+
+function formatProviderTabLabel(providerId: ProviderId): string {
+  const provider = providers[providerId];
+
+  if (providerId === DEFAULT_PROVIDER_ID) {
+    return `${provider.label} (Default)`;
+  }
+
+  return `${provider.label} (${provider.shortAlias})`;
 }
 
 type PromptFallbackProps = {

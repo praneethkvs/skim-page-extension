@@ -22,7 +22,7 @@ export type ParsedLocation =
     }
   | { kind: 'malformed'; message: string; example: string };
 
-const EXAMPLE_URL = 'https://skim.page/cl/investor/https://example.com/article';
+const EXAMPLE_URL = 'https://skim.page/cl/i/https://example.com/article';
 
 export function parseLocation(location: Location): ParsedLocation {
   const params = new URLSearchParams(location.search);

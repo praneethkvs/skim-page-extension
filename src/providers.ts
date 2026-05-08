@@ -1,4 +1,4 @@
-export type ProviderId = 'chatgpt' | 'claude' | 'gemini' | 'grok' | 'perplexity';
+export type ProviderId = 'chatgpt' | 'gemini' | 'claude' | 'perplexity' | 'grok';
 
 export type HandoffMode = 'prefill' | 'autoRun' | 'copyOnly';
 
@@ -24,15 +24,6 @@ export const providers: Record<ProviderId, Provider> = {
     note: 'Prompt should open prefilled.',
     buildHandoffUrl: (prompt) => `https://chatgpt.com/?prompt=${encodeURIComponent(prompt)}`,
   },
-  claude: {
-    id: 'claude',
-    label: 'Claude',
-    shortAlias: 'cl',
-    aliases: ['cl', 'claude'],
-    handoffMode: 'prefill',
-    note: 'Prompt should open prefilled.',
-    buildHandoffUrl: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
-  },
   gemini: {
     id: 'gemini',
     label: 'Gemini',
@@ -43,14 +34,14 @@ export const providers: Record<ProviderId, Provider> = {
     buildHandoffUrl: (prompt) =>
       `https://www.google.com/search?udm=50&q=${encodeURIComponent(prompt)}`,
   },
-  grok: {
-    id: 'grok',
-    label: 'Grok',
-    shortAlias: 'gr',
-    aliases: ['gr', 'grok'],
-    handoffMode: 'autoRun',
-    note: 'This provider may run the prompt immediately.',
-    buildHandoffUrl: (prompt) => `https://grok.com/?q=${encodeURIComponent(prompt)}`,
+  claude: {
+    id: 'claude',
+    label: 'Claude',
+    shortAlias: 'cl',
+    aliases: ['cl', 'claude'],
+    handoffMode: 'prefill',
+    note: 'Prompt should open prefilled.',
+    buildHandoffUrl: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
   },
   perplexity: {
     id: 'perplexity',
@@ -60,6 +51,15 @@ export const providers: Record<ProviderId, Provider> = {
     handoffMode: 'autoRun',
     note: 'This provider may run the prompt immediately.',
     buildHandoffUrl: (prompt) => `https://www.perplexity.ai/?q=${encodeURIComponent(prompt)}`,
+  },
+  grok: {
+    id: 'grok',
+    label: 'Grok',
+    shortAlias: 'gr',
+    aliases: ['gr', 'grok'],
+    handoffMode: 'autoRun',
+    note: 'This provider may run the prompt immediately.',
+    buildHandoffUrl: (prompt) => `https://grok.com/?q=${encodeURIComponent(prompt)}`,
   },
 };
 

@@ -1,10 +1,12 @@
-export type LensId = 'default' | 'investor' | 'research' | 'eli5';
+export type LensId = 'default' | 'eli5' | 'research' | 'investor';
 
 export type Lens = {
   id: LensId;
   color: string;
   title: string;
   desc: string;
+  eyebrow: string;
+  shortAlias: string;
   aliases: string[];
   demoSuffix: string;
   prompt: string;
@@ -18,73 +20,69 @@ export const lenses: Record<LensId, Lens> = {
     color: '#E8390E',
     title: 'Default',
     desc: 'General-purpose summary',
+    eyebrow: 'READ SMARTER',
+    shortAlias: '',
     aliases: ['default', 'd'],
     demoSuffix: '',
-    prompt: `Summarize this article and provide:
-- TLDR
-- Key takeaways
-- Important insights
-- Notable facts or statistics
-- Why it matters
-- Counterpoints or criticisms
-- Simple explanation for a casual reader`,
-  },
-  investor: {
-    id: 'investor',
-    color: '#1D6AE8',
-    title: 'Investor',
-    desc: 'Market & financial lens',
-    aliases: ['investor', 'i'],
-    demoSuffix: '/investor',
-    prompt: `Analyze this article from an investor and business perspective.
+    prompt: `Summarize this article briefly.
 
 Provide:
-- TLDR
-- Bull case
-- Bear case
-- Revenue/business implications
-- Competitive advantages or moats
-- Risks and uncertainties
-- Long-term implications
-- Important statistics or claims
-- What investors should pay attention to`,
-  },
-  research: {
-    id: 'research',
-    color: '#0F8A5F',
-    title: 'Research',
-    desc: 'Structured academic analysis',
-    aliases: ['research', 'r'],
-    demoSuffix: '/research',
-    prompt: `Analyze this article like a researcher or analyst.
-
-Provide:
-- TLDR
-- Main thesis or argument
-- Supporting evidence
-- Assumptions
-- Weaknesses or limitations
-- Biases or potential blind spots
-- Important data or claims
-- Counterarguments
-- Open questions needing further research`,
+- TLDR in 1-2 sentences
+- 3 key takeaways
+- Why it matters in 1 sentence`,
   },
   eli5: {
     id: 'eli5',
     color: '#9333EA',
     title: 'ELI5',
     desc: 'Plain language, no jargon',
+    eyebrow: 'READ FASTER',
+    shortAlias: 'e',
     aliases: ['eli5', 'e'],
-    demoSuffix: '/eli5',
-    prompt: `Explain this article in an extremely simple and intuitive way.
+    demoSuffix: '/e',
+    prompt: `Explain this article in simple terms.
 
 Provide:
-- TLDR
-- Simple explanation
-- Real-world analogies
-- Definitions of difficult terms
-- Why this matters
-- Key takeaways for a casual person`,
+- TLDR in 1-2 sentences
+- Simple explanation in 3-5 bullets
+- One real-world analogy
+- Why it matters in 1 sentence`,
+  },
+  research: {
+    id: 'research',
+    color: '#0F8A5F',
+    title: 'Research',
+    desc: 'Structured academic analysis',
+    eyebrow: 'READ DEEPER',
+    shortAlias: 'r',
+    aliases: ['research', 'r'],
+    demoSuffix: '/r',
+    prompt: `Analyze this article like a researcher.
+
+Provide:
+- TLDR in 1-2 sentences
+- Main argument
+- 3 key pieces of evidence or claims
+- Any major assumptions or limitations
+- One open question`,
+  },
+  investor: {
+    id: 'investor',
+    color: '#1D6AE8',
+    title: 'Investor',
+    desc: 'Market & financial lens',
+    eyebrow: 'READ BETTER',
+    shortAlias: 'i',
+    aliases: ['investor', 'i'],
+    demoSuffix: '/i',
+    prompt: `Analyze this article from an investor perspective.
+
+Provide:
+- TLDR in 1-2 sentences
+- Bull case in 2 bullets
+- Bear case in 2 bullets
+- Business or market implication
+- Key metric, claim, or risk to watch`,
   },
 };
 

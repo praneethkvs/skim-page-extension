@@ -70,7 +70,7 @@ nav.nav-scrolled {
 .nav-link:hover { color: var(--black); }
 
 .landing-grid {
-  padding: 112px 48px 80px;
+  padding: 100px 48px 64px;
   max-width: 900px;
   margin: 0 auto;
 }
@@ -114,6 +114,7 @@ nav.nav-scrolled {
   color: var(--mid);
   line-height: 1.65;
   max-width: 480px;
+  min-height: calc(4 * 1.65em);
   margin-bottom: 40px;
 }
 
@@ -268,13 +269,6 @@ nav.nav-scrolled {
   background: var(--accent);
 }
 
-.provider-current {
-  margin-top: 10px;
-  color: var(--mid);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
 .section-label {
   font-family: 'DM Mono', monospace;
   font-size: 13px;
@@ -350,7 +344,7 @@ nav.nav-scrolled {
 }
 
 .lenses-section .prompt-block {
-  height: 430px;
+  height: 330px;
   overflow-y: auto;
 }
 
@@ -420,8 +414,14 @@ nav.nav-scrolled {
 
 .shortcut-reference {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   margin-top: 14px;
+}
+
+.shortcut-note {
+  color: var(--mid);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .shortcut-title {
@@ -584,8 +584,8 @@ footer {
 @media (max-width: 640px) {
   nav { padding: 16px 24px; }
   .nav-right { gap: 16px; }
-  .landing-grid { padding: 96px 24px 68px; }
-  .hero { max-width: none; }
+  .landing-grid { padding: 92px 24px 56px; }
+  .hero { max-width: none; margin-bottom: 44px; }
   .how-inner { padding-left: 24px; padding-right: 24px; }
   .how-section { padding: 52px 24px; }
   .how-steps { grid-template-columns: 1fr; gap: 28px; }
@@ -598,7 +598,7 @@ footer {
   .provider-control { margin-bottom: 24px; }
   .provider-tab { flex: 1 1 calc(50% - 8px); justify-content: center; }
   .lens-label { margin-bottom: 14px; }
-  .lenses-section .prompt-block { height: 380px; }
+  .lenses-section .prompt-block { height: 390px; }
   .result-page { padding: 120px 24px 48px; }
   .result-actions { flex-direction: column; align-items: stretch; }
   footer { flex-direction: column; gap: 12px; text-align: center; padding: 32px 24px; }
@@ -624,6 +624,6 @@ footer {
 
 @media (min-width: 1120px) {
   .lenses-section .prompt-block {
-    height: 470px;
+    height: 370px;
   }
 }

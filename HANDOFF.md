@@ -15,8 +15,8 @@ The app is a Vite + React + TypeScript MVP for `skim.page`. It is client-only an
 What is implemented:
 
 - Landing page in React with responsive hero plus provider/lens controls.
-- Four lenses: Default, Investor, Research, ELI5.
-- Five provider families: ChatGPT, Claude, Gemini, Grok, Perplexity.
+- Four lenses: Default, ELI5, Research, Investor.
+- Five provider families: ChatGPT, Gemini, Claude, Perplexity, Grok.
 - Provider aliases and full provider names in path/query URLs.
 - Generated prompt fallback page.
 - Malformed URL page.
@@ -101,7 +101,9 @@ README.md          Product/engineering overview and PRD
 HANDOFF.md         This continuation file
 skim.page.html     Original HTML skeleton and visual reference
 index.html         Vite HTML entry
+public/favicon.svg Browser tab favicon using the s. brand mark
 vite.config.ts     Vite config plus query URL fallback middleware
+vercel.json        Vercel SPA fallback rewrite config
 package.json       Scripts and package ranges
 package-lock.json  Exact installed package versions
 src/App.tsx        UI states and interactions
@@ -143,28 +145,28 @@ dist/              Build output, generated
 
 ```text
 default
-investor
-research
 eli5
+research
+investor
 ```
 
 ### Lens Aliases
 
 ```text
 default:  default, d
-investor: investor, i
-research: research, r
 eli5:     eli5, e
+research: research, r
+investor: investor, i
 ```
 
 ### Provider IDs and Aliases
 
 ```text
 chatgpt:    ch, chatgpt, openai
-claude:     cl, claude
 gemini:     ge, gemini
-grok:       gr, grok
+claude:     cl, claude
 perplexity: px, perplexity
+grok:       gr, grok
 ```
 
 ### URL Inputs
@@ -173,18 +175,11 @@ Supported paths:
 
 ```text
 /https://example.com/article
-/investor/https://example.com/article
 /i/https://example.com/article
-/research/https://example.com/article
 /r/https://example.com/article
-/eli5/https://example.com/article
 /e/https://example.com/article
-/cl/research/https://example.com/article
 /cl/r/https://example.com/article
-/claude/research/https://example.com/article
 /px/https://example.com/article
-/perplexity/investor/https://example.com/article
-/ge/eli5/https://example.com/article
 /ge/e/https://example.com/article
 /grok/default/https://example.com/article
 ```
@@ -197,7 +192,7 @@ Supported query:
 
 ### Prompt Output
 
-All prompts follow:
+All prompts are intentionally compact TL;DR prompts. They follow:
 
 ```text
 {MODE_PROMPT}
@@ -205,14 +200,23 @@ All prompts follow:
 Article URL: {ARTICLE_URL}
 ```
 
+Current lens prompt shapes:
+
+```text
+Default: TLDR in 1-2 sentences, 3 key takeaways, why it matters in 1 sentence.
+ELI5: TLDR, 3-5 simple bullets, one analogy, why it matters in 1 sentence.
+Research: TLDR, main argument, 3 evidence/claim bullets, limitations, one open question.
+Investor: TLDR, 2-bullet bull case, 2-bullet bear case, market implication, key metric/claim/risk.
+```
+
 ### Provider Handoff URLs
 
 ```text
 ChatGPT:    https://chatgpt.com/?prompt={encodedPrompt}
-Claude:     https://claude.ai/new?q={encodedPrompt}
 Gemini:     https://www.google.com/search?udm=50&q={encodedPrompt}
-Grok:       https://grok.com/?q={encodedPrompt}
+Claude:     https://claude.ai/new?q={encodedPrompt}
 Perplexity: https://www.perplexity.ai/?q={encodedPrompt}
+Grok:       https://grok.com/?q={encodedPrompt}
 ```
 
 Provider handoff is best-effort. Always keep copy fallback.
@@ -230,10 +234,10 @@ transforming...
 30 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/index.html                   0.90 kB | gzip:  0.49 kB
-dist/assets/index-CaHfb61s.css    9.64 kB | gzip:  2.44 kB
-dist/assets/index-CCcp4YDB.js   157.49 kB | gzip: 50.64 kB
-built in 257ms
+dist/index.html                   1.70 kB | gzip:  0.67 kB
+dist/assets/index-BKuWQced.css    9.81 kB | gzip:  2.46 kB
+dist/assets/index-BbKHv8Bj.js   158.37 kB | gzip: 50.66 kB
+built in 258ms
 ```
 
 Browser checks performed:
@@ -241,7 +245,7 @@ Browser checks performed:
 - Landing page rendered locally at `http://127.0.0.1:5173/`.
 - Labels verified: `Choose Your Provider`, `Choose your Lens`.
 - Hero prefix copy button verified: one `Copy` button exists and changes to `Copied` after click.
-- How It Works provider reference verified: includes `ch`, `cl`, `ge`, `gr`, `px` plus provider names.
+- How It Works provider reference verified: includes `ChatGPT (default)`, `ge`, `cl`, `px`, `gr` plus provider names.
 - Gemini route tested at:
 
 ```text
@@ -286,6 +290,15 @@ Known browser test caveat:
 - Provider means provider family, not specific model.
 - Support both short aliases and full provider names.
 - Support single-letter lens aliases: `i`, `r`, and `e`.
+- Hero eyebrow text follows the selected lens: smarter, better, deeper, faster.
+- ChatGPT is included in provider UI as the default; `ch` remains supported as a hidden URL alias.
+- Provider order is ChatGPT, Gemini, Claude, Perplexity, Grok.
+- Lens order is Default, ELI5, Research, Investor.
+- Hero prefix uses short lens aliases, and provider/lens buttons show shortcuts in parentheses.
+- How It Works shows the note `Use the shortcut or full name.` above the shortcut badges.
+- Default is not shown as a lens shortcut chip; the absence of a lens means Default.
+- Lens prompts were shortened so first outputs stay TL;DR-sized; users can ask the AI for deeper follow-up in chat.
+- Public deploy prep added `vercel.json` for Vercel SPA fallback, favicon, and share metadata in `index.html`.
 - ChatGPT remains default provider.
 - Gemini web handoff now uses Google AI Mode search via `udm=50`, not `gemini.google.com/app`.
 - Gemini direct prompt injection is future browser extension work.
@@ -297,7 +310,7 @@ Known browser test caveat:
 - Provider handoff URLs are unofficial or best-effort. They can change without notice.
 - Gemini via Google AI Mode depends on Google Search behavior and account/region eligibility.
 - Popup blockers or browser surfaces may block automatic `window.open`.
-- Production hosting must support SPA fallback routing for prepend-style paths.
+- Production hosting must support SPA fallback routing for prepend-style paths. Vercel is covered by `vercel.json`; other hosts need equivalent rewrites.
 - No automated test suite exists yet; verification is currently build plus browser checks.
 
 ## Next Steps
