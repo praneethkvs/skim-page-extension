@@ -1,4 +1,4 @@
-import { buildPrompt, lenses, resolveLensId, type LensId } from './lenses';
+import { buildPrompt, isLensAlias, lenses, resolveLensId, type LensId } from './lenses';
 import {
   isProviderAlias,
   providers,
@@ -167,7 +167,7 @@ function splitLensAndUrl(
   const firstSegment = rawPath.slice(0, firstSlash);
   const rest = rawPath.slice(firstSlash + 1);
 
-  if (firstSegment in lenses) {
+  if (isLensAlias(firstSegment)) {
     return {
       lensCandidate: firstSegment,
       providerCandidate,
@@ -222,5 +222,5 @@ function isLikelyUnsupportedProvider(rest: string): boolean {
   const possibleLens = rest.slice(0, firstSlash);
   const possibleUrl = rest.slice(firstSlash + 1);
 
-  return possibleLens in lenses && isLikelyUnsupportedLens(possibleLens, possibleUrl);
+  return isLensAlias(possibleLens) && isLikelyUnsupportedLens(possibleLens, possibleUrl);
 }

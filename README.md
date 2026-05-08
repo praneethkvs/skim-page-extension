@@ -107,13 +107,18 @@ Supported path examples:
 ```text
 /https://example.com/article
 /investor/https://example.com/article
+/i/https://example.com/article
 /research/https://example.com/article
+/r/https://example.com/article
 /eli5/https://example.com/article
+/e/https://example.com/article
 /cl/research/https://example.com/article
+/cl/r/https://example.com/article
 /claude/research/https://example.com/article
 /px/https://example.com/article
 /perplexity/investor/https://example.com/article
 /ge/eli5/https://example.com/article
+/ge/e/https://example.com/article
 /grok/default/https://example.com/article
 ```
 
@@ -141,6 +146,15 @@ cl, claude -> Claude
 ge, gemini -> Gemini
 gr, grok -> Grok
 px, perplexity -> Perplexity
+```
+
+Lens aliases:
+
+```text
+default, d -> Default
+investor, i -> Investor
+research, r -> Research
+eli5, e -> ELI5
 ```
 
 Current handoff URLs:
@@ -247,6 +261,7 @@ Provide:
 
 - Phase 1 now includes provider family selection, not individual model selection.
 - Short provider aliases and full provider names both work.
+- Single-letter lens aliases now work: `i`, `r`, and `e`.
 - ChatGPT remains the default provider.
 - Gemini no longer links directly to `gemini.google.com/app` for the web handoff; it uses Google AI Mode search via `https://www.google.com/search?udm=50&q=...`.
 - Gemini remains best-effort. A future browser extension can make Gemini more reliable by opening Gemini, filling the prompt editor, and optionally submitting.

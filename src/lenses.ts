@@ -5,6 +5,7 @@ export type Lens = {
   color: string;
   title: string;
   desc: string;
+  aliases: string[];
   demoSuffix: string;
   prompt: string;
 };
@@ -17,6 +18,7 @@ export const lenses: Record<LensId, Lens> = {
     color: '#E8390E',
     title: 'Default',
     desc: 'General-purpose summary',
+    aliases: ['default', 'd'],
     demoSuffix: '',
     prompt: `Summarize this article and provide:
 - TLDR
@@ -32,6 +34,7 @@ export const lenses: Record<LensId, Lens> = {
     color: '#1D6AE8',
     title: 'Investor',
     desc: 'Market & financial lens',
+    aliases: ['investor', 'i'],
     demoSuffix: '/investor',
     prompt: `Analyze this article from an investor and business perspective.
 
@@ -51,6 +54,7 @@ Provide:
     color: '#0F8A5F',
     title: 'Research',
     desc: 'Structured academic analysis',
+    aliases: ['research', 'r'],
     demoSuffix: '/research',
     prompt: `Analyze this article like a researcher or analyst.
 
@@ -70,6 +74,7 @@ Provide:
     color: '#9333EA',
     title: 'ELI5',
     desc: 'Plain language, no jargon',
+    aliases: ['eli5', 'e'],
     demoSuffix: '/eli5',
     prompt: `Explain this article in an extremely simple and intuitive way.
 
@@ -86,11 +91,24 @@ Provide:
 export const lensIds = Object.keys(lenses) as LensId[];
 
 export function resolveLensId(value: string | null | undefined): LensId {
-  if (value && value in lenses) {
-    return value as LensId;
+  if (!value) {
+    return DEFAULT_LENS_ID;
   }
 
-  return DEFAULT_LENS_ID;
+  const normalized = value.toLowerCase();
+  const lensId = lensIds.find((id) => lenses[id].aliases.includes(normalized));
+
+  return lensId ?? DEFAULT_LENS_ID;
+}
+
+export function isLensAlias(value: string | null | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.toLowerCase();
+
+  return lensIds.some((id) => lenses[id].aliases.includes(normalized));
 }
 
 export function buildPrompt(lens: Lens, articleUrl: string): string {

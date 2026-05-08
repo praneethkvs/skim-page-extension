@@ -163,7 +163,7 @@ function LandingPage({
           onMouseEnter={() => setIsAutoCycling(false)}
         >
           <div className="provider-control">
-            <p className="section-label provider-label">Choose Your Provider</p>
+            <p className="section-label provider-label">Optional: Choose Your Provider</p>
             <div className="provider-tabs">
               {providerIds.map((providerId) => {
                 const provider = providers[providerId];
@@ -185,10 +185,10 @@ function LandingPage({
             </div>
             <p className="provider-current">
               This link will open in {activeProvider.label}
-              {activeProviderId === DEFAULT_PROVIDER_ID ? ' by default.' : '.'}
+              {activeProviderId === DEFAULT_PROVIDER_ID ? ' (default).' : '.'}
             </p>
           </div>
-          <p className="section-label lens-label">Choose your Lens</p>
+          <p className="section-label lens-label">Optional: Choose your Lens</p>
           <div className="lens-tabs" id="lens-tabs">
             {lensIds.map((lensId) => {
               const lens = lenses[lensId];
@@ -241,15 +241,30 @@ function LandingPage({
               <div className="step-num accent-color">2</div>
               <div className="step-title">Prepend the URL</div>
               <div className="step-body">
-                Add <code>skim.page/</code>, or pick a provider with <code>skim.page/cl/</code>, at
-                the start of the URL.
+                Add <code>skim.page/</code> to the start of the URL. Optionally, pick a provider
+                with <code>skim.page/cl/</code>, pick a lens with <code>skim.page/i/</code>, or
+                both with <code>skim.page/gr/e/</code>.
               </div>
-              <div className="provider-reference" aria-label="Provider shortcuts">
-                <span><strong>ch</strong> ChatGPT</span>
-                <span><strong>cl</strong> Claude</span>
-                <span><strong>ge</strong> Gemini</span>
-                <span><strong>gr</strong> Grok</span>
-                <span><strong>px</strong> Perplexity</span>
+              <div className="shortcut-reference" aria-label="URL shortcuts">
+                <div className="shortcut-group">
+                  <div className="shortcut-title">Providers</div>
+                  <div className="shortcut-badges">
+                    <span><strong>ch</strong> ChatGPT</span>
+                    <span><strong>cl</strong> Claude</span>
+                    <span><strong>ge</strong> Gemini</span>
+                    <span><strong>gr</strong> Grok</span>
+                    <span><strong>px</strong> Perplexity</span>
+                  </div>
+                </div>
+                <div className="shortcut-group">
+                  <div className="shortcut-title">Lens</div>
+                  <div className="shortcut-badges">
+                    <span><strong>/</strong> Default</span>
+                    <span><strong>i</strong> Investor</span>
+                    <span><strong>r</strong> Research</span>
+                    <span><strong>e</strong> ELI5</span>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="how-step">

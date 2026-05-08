@@ -148,6 +148,15 @@ research
 eli5
 ```
 
+### Lens Aliases
+
+```text
+default:  default, d
+investor: investor, i
+research: research, r
+eli5:     eli5, e
+```
+
 ### Provider IDs and Aliases
 
 ```text
@@ -165,13 +174,18 @@ Supported paths:
 ```text
 /https://example.com/article
 /investor/https://example.com/article
+/i/https://example.com/article
 /research/https://example.com/article
+/r/https://example.com/article
 /eli5/https://example.com/article
+/e/https://example.com/article
 /cl/research/https://example.com/article
+/cl/r/https://example.com/article
 /claude/research/https://example.com/article
 /px/https://example.com/article
 /perplexity/investor/https://example.com/article
 /ge/eli5/https://example.com/article
+/ge/e/https://example.com/article
 /grok/default/https://example.com/article
 ```
 
@@ -271,6 +285,7 @@ Known browser test caveat:
 - Multi-provider selection moved into Phase 1.
 - Provider means provider family, not specific model.
 - Support both short aliases and full provider names.
+- Support single-letter lens aliases: `i`, `r`, and `e`.
 - ChatGPT remains default provider.
 - Gemini web handoff now uses Google AI Mode search via `udm=50`, not `gemini.google.com/app`.
 - Gemini direct prompt injection is future browser extension work.
