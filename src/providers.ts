@@ -21,7 +21,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'ch',
     aliases: ['ch', 'chatgpt', 'openai'],
     handoffMode: 'prefill',
-    note: 'Prompt should open prefilled.',
+    note: 'The AI app should open with the prompt prefilled.',
     buildHandoffUrl: (prompt) => `https://chatgpt.com/?prompt=${encodeURIComponent(prompt)}`,
   },
   gemini: {
@@ -30,7 +30,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'ge',
     aliases: ['ge', 'gemini'],
     handoffMode: 'autoRun',
-    note: 'Gemini opens through Google AI Mode search as a best-effort prompt handoff.',
+    note: 'Gemini opens through Google AI Mode search as a best-effort AI app handoff.',
     buildHandoffUrl: (prompt) =>
       `https://www.google.com/search?udm=50&q=${encodeURIComponent(prompt)}`,
   },
@@ -40,7 +40,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'cl',
     aliases: ['cl', 'claude'],
     handoffMode: 'prefill',
-    note: 'Prompt should open prefilled.',
+    note: 'The AI app should open with the prompt prefilled.',
     buildHandoffUrl: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
   },
   perplexity: {
@@ -49,7 +49,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'px',
     aliases: ['px', 'perplexity'],
     handoffMode: 'autoRun',
-    note: 'This provider may run the prompt immediately.',
+    note: 'This AI app may run the prompt immediately.',
     buildHandoffUrl: (prompt) => `https://www.perplexity.ai/?q=${encodeURIComponent(prompt)}`,
   },
   grok: {
@@ -58,7 +58,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'gr',
     aliases: ['gr', 'grok'],
     handoffMode: 'autoRun',
-    note: 'This provider may run the prompt immediately.',
+    note: 'This AI app may run the prompt immediately.',
     buildHandoffUrl: (prompt) => `https://grok.com/?q=${encodeURIComponent(prompt)}`,
   },
 };
@@ -86,12 +86,4 @@ export function isProviderAlias(value: string | null | undefined): boolean {
   const normalized = value.toLowerCase();
 
   return providerIds.some((providerId) => providers[providerId].aliases.includes(normalized));
-}
-
-export function buildProviderPathPrefix(providerId: ProviderId): string {
-  if (providerId === DEFAULT_PROVIDER_ID) {
-    return '';
-  }
-
-  return `/${providers[providerId].shortAlias}`;
 }

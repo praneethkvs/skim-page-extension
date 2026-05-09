@@ -1,18 +1,26 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { buildPreviewPrompt, lensIds, lenses, type LensId } from './lenses';
 import {
   DEFAULT_PROVIDER_ID,
-  buildProviderPathPrefix,
   providerIds,
   providers,
   type ProviderId,
 } from './providers';
 import { parseLocation, type ParsedLocation } from './url';
 
-const openedHandoffUrls = new Set<string>();
+const SOURCE_URL = 'https://github.com/praneethkvs/skim.page';
+const FEEDBACK_URL = 'https://github.com/praneethkvs/skim.page/issues';
+
+const exampleArticleUrls: Record<LensId, string> = {
+  default: 'https://blog.google/innovation-and-ai/technology/ai/google-gemini-ai/',
+  eli5: 'https://science.nasa.gov/earth/climate-change/nope-earth-isnt-cooling/',
+  research: 'https://science.nasa.gov/climate-change/evidence/',
+  investor: 'https://www.apple.com/newsroom/2026/01/apple-reports-first-quarter-results/',
+};
 
 function App() {
   const parsedLocation = useMemo(() => parseLocation(window.location), []);
+  const isPrivacyPage = isStaticPage(window.location, 'privacy');
   const initialLensId = parsedLocation.kind === 'request' ? parsedLocation.lensId : 'default';
   const initialProviderId =
     parsedLocation.kind === 'request' ? parsedLocation.providerId : DEFAULT_PROVIDER_ID;
@@ -28,7 +36,9 @@ function App() {
   return (
     <>
       <Nav />
-      {parsedLocation.kind === 'request' ? (
+      {isPrivacyPage ? (
+        <PrivacyPage />
+      ) : parsedLocation.kind === 'request' ? (
         <PromptFallback request={parsedLocation} />
       ) : parsedLocation.kind === 'malformed' ? (
         <MalformedState parsed={parsedLocation} />
@@ -68,6 +78,12 @@ function Nav() {
         <a href="/#how" className="nav-link">
           How it works
         </a>
+        <a href="/#faq" className="nav-link">
+          FAQ
+        </a>
+        <a href="/privacy" className="nav-link">
+          Privacy
+        </a>
       </div>
     </nav>
   );
@@ -89,8 +105,11 @@ function LandingPage({
   const activeLens = lenses[activeLensId];
   const activeProvider = providers[activeProviderId];
   const [isAutoCycling, setIsAutoCycling] = useState(true);
-  const [prefixCopyLabel, setPrefixCopyLabel] = useState('Copy');
-  const skimPrefix = buildSkimPrefix(activeProviderId, activeLensId);
+  const [isUsingExampleUrl, setIsUsingExampleUrl] = useState(true);
+  const [articleUrl, setArticleUrl] = useState(exampleArticleUrls[activeLensId]);
+  const skimPrefix = buildSkimPrefix(activeLensId, activeProviderId);
+  const summaryPromptUrl = buildSummaryPromptUrl(articleUrl, activeProviderId, activeLensId);
+  const hasArticleUrl = articleUrl.trim().length > 0;
 
   useEffect(() => {
     if (!isAutoCycling) {
@@ -104,6 +123,12 @@ function LandingPage({
     return () => window.clearInterval(timer);
   }, [activeLensId, isAutoCycling, onLensChange]);
 
+  useEffect(() => {
+    if (isUsingExampleUrl) {
+      setArticleUrl(exampleArticleUrls[activeLensId]);
+    }
+  }, [activeLensId, isUsingExampleUrl]);
+
   function chooseLens(lensId: LensId) {
     setIsAutoCycling(false);
     onLensChange(lensId);
@@ -114,17 +139,14 @@ function LandingPage({
     onProviderChange(providerId);
   }
 
-  async function copyPrefix() {
-    const prefix = `https://${skimPrefix}`;
+  function openSummaryPrompt(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-    try {
-      await navigator.clipboard.writeText(prefix);
-    } catch {
-      fallbackCopyText(prefix);
+    if (!hasArticleUrl) {
+      return;
     }
 
-    setPrefixCopyLabel('Copied');
-    window.setTimeout(() => setPrefixCopyLabel('Copy'), 1600);
+    window.location.href = summaryPromptUrl;
   }
 
   return (
@@ -135,87 +157,89 @@ function LandingPage({
             {activeLens.eyebrow}
           </div>
           <h1 className="hero-headline">
-            TL;DR,
+            Summarize articles
             <br />
-            <em id="hero-em">your way.</em>
+            <em id="hero-em">with your AI app.</em>
           </h1>
           <p className="hero-sub">
-            Just add <code>{skimPrefix}</code> in front of any article URL in your browser. 
-            Optionally, pick your preferred provider and pick a lens when you want a specific angle.
+            Just add <code>skim.page/</code> in front of any article URL in your browser, and get
+            the TL;DR.
           </p>
-          <div className="hero-demo">
-            <span className="hero-demo-accent" id="demo-accent">
-              {skimPrefix}
-            </span>
-            <span className="hero-demo-url">nytimes.com/...</span>
-            <button className="hero-copy-button" onClick={copyPrefix} type="button">
-              {prefixCopyLabel}
-            </button>
-          </div>
+          <p className="hero-built-for">
+            Use with your preferred chatbot
+          </p>
         </section>
 
         <section
-          className="lenses-section"
+          className="demo-section"
           id="lenses"
           onMouseEnter={() => setIsAutoCycling(false)}
         >
-          <div className="provider-control">
-            <p className="section-label provider-label">Optional: Choose Your Provider</p>
-            <div className="provider-tabs">
-              {providerIds.map((providerId) => {
-                const provider = providers[providerId];
-                const isActive = providerId === activeProviderId;
-
-                return (
-                  <button
-                    className="provider-tab"
-                    key={provider.id}
-                    onClick={() => chooseProvider(providerId)}
-                    type="button"
-                    aria-pressed={isActive}
-                  >
-                    <span className={isActive ? 'provider-dot provider-dot-active' : 'provider-dot'} />
-                    {formatProviderTabLabel(providerId)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <p className="section-label lens-label">Optional: Choose your Lens</p>
-          <div className="lens-tabs" id="lens-tabs">
-            {lensIds.map((lensId) => {
-              const lens = lenses[lensId];
-              const isActive = lensId === activeLensId;
-
-              return (
-                <button
-                  className="lens-tab"
-                  data-lens={lensId}
-                  key={lens.id}
-                  onClick={() => chooseLens(lensId)}
-                  style={{
-                    background: isActive ? lens.color : '#fff',
-                    color: isActive ? '#fff' : '#888',
-                    borderColor: isActive ? lens.color : '#E0E0E0',
+          <form className="summary-demo" onSubmit={openSummaryPrompt}>
+            <label className="url-field">
+              <div className="url-input-row">
+                <span className="url-prefix">{skimPrefix}</span>
+                <input
+                  onChange={(event) => {
+                    setIsUsingExampleUrl(false);
+                    setArticleUrl(event.target.value);
                   }}
-                  type="button"
+                  placeholder={exampleArticleUrls[activeLensId]}
+                  type="text"
+                  value={articleUrl}
+                />
+                <button
+                  className="action-button action-primary summary-submit"
+                  disabled={!hasArticleUrl}
+                  type="submit"
                 >
-                  {formatLensTabLabel(lens)}
+                  Try it
                 </button>
-              );
-            })}
-          </div>
-          <div className="lens-meta">
-            <div className="lens-title" id="lens-title">
-              {activeLens.title}
+              </div>
+            </label>
+            <div className="demo-controls">
+              <div className="style-control">
+                <Dropdown
+                  label="Summary style"
+                  onChange={chooseLens}
+                  options={lensIds.map((lensId) => ({
+                    label: formatLensTabLabel(lenses[lensId]),
+                    value: lensId,
+                  }))}
+                  value={activeLensId}
+                />
+              </div>
+              <div className="provider-control">
+                <Dropdown
+                  label="AI app"
+                  onChange={chooseProvider}
+                  options={providerIds.map((providerId) => ({
+                    label: formatProviderTabLabel(providerId),
+                    value: providerId,
+                  }))}
+                  value={activeProviderId}
+                />
+              </div>
             </div>
-            <div className="lens-desc" id="lens-desc">
-              {activeLens.desc}
+            <div className="lens-meta">
+              <div className="lens-title" id="lens-title">
+                {activeLens.title}
+              </div>
+              <div className="lens-desc" id="lens-desc">
+                {activeLens.desc}
+              </div>
+              <p className="lens-plain-desc">{summaryStyleDescriptions[activeLensId]}</p>
             </div>
-          </div>
-          <div className="prompt-block" id="prompt-block">
-            {buildPreviewPrompt(activeLens)}
-          </div>
+            <details className="preview-shell">
+              <summary className="preview-header">
+                <span>Generated prompt preview</span>
+                <strong>{activeProvider.label}</strong>
+              </summary>
+              <div className="prompt-block prompt-preview" id="prompt-block">
+                {buildPreviewPrompt(activeLens)}
+              </div>
+            </details>
+          </form>
         </section>
       </div>
 
@@ -234,47 +258,205 @@ function LandingPage({
               <div className="step-num accent-color">2</div>
               <div className="step-title">Prepend the URL</div>
               <div className="step-body">
-                Just add <code>skim.page/</code> to the start of the URL. <br /><br />
-                Optionally,<br /> pick provider:{' '} 
-                <code>skim.page/cl/</code>  <br />
-                pick lens:{' '} <code>skim.page/i/</code> <br /> 
-                or both:{' '} <code>skim.page/cl/i/</code>.
-                 <br /> 
-              </div>
-              <div className="shortcut-reference" aria-label="URL shortcuts">
-                <div className="shortcut-note">Use the shortcut or full name.</div>
-                <div className="shortcut-group">
-                  <div className="shortcut-title">Providers</div>
-                  <div className="shortcut-badges">
-                    <span>ChatGPT (default)</span>
-                    <span><strong>ge</strong> Gemini</span>
-                    <span><strong>cl</strong> Claude</span>
-                    <span><strong>px</strong> Perplexity</span>
-                    <span><strong>gr</strong> Grok</span>
-                  </div>
-                </div>
-                <div className="shortcut-group">
-                  <div className="shortcut-title">Lens</div>
-                  <div className="shortcut-badges">
-                    <span><strong>e</strong> ELI5</span>
-                    <span><strong>r</strong> Research</span>
-                    <span><strong>i</strong> Investor</span>
-                  </div>
-                </div>
+                Add <code>skim.page/</code> before the article URL. For example,
+                <br />
+                <code>skim.page/https://example.com/article</code>.
               </div>
             </div>
             <div className="how-step">
               <div className="step-num accent-color">3</div>
-              <div className="step-title">Get your TL;DR</div>
+              <div className="step-title">Open your AI app</div>
               <div className="step-body">
-                Your AI app opens automatically. Copy fallback stays on skim.page.
+                Your current tab redirects with a ready prompt. If the AI app does not pick it up,
+                copy the prompt from skim.page.
+              </div>
+            </div>
+          </div>
+          <div className="shortcut-reference" aria-label="URL shortcuts">
+            <div className="shortcut-heading">
+              <p className="section-label">URL shortcuts</p>
+              <h3>Power-user paths</h3>
+            </div>
+            <div className="shortcut-example">
+              <code>skim.page/i/cl/https://example.com/article</code>
+              <span>uses the Investor summary style in Claude.</span>
+            </div>
+            <p className="shortcut-note">
+              Add a summary style shortcut, an AI app shortcut, or both before the article URL.
+              Full names work too, like <code>skim.page/investor/claude/...</code>.
+            </p>
+            <div className="shortcut-group">
+              <div className="shortcut-title">Summary styles</div>
+              <div className="shortcut-badges">
+                <span>Summary (default)</span>
+                <span><strong>e</strong> ELI5</span>
+                <span><strong>r</strong> Research</span>
+                <span><strong>i</strong> Investor</span>
+              </div>
+            </div>
+            <div className="shortcut-group">
+              <div className="shortcut-title">AI apps</div>
+              <div className="shortcut-badges">
+                <span>ChatGPT (default)</span>
+                <span><strong>ge</strong> Gemini</span>
+                <span><strong>cl</strong> Claude</span>
+                <span><strong>px</strong> Perplexity</span>
+                <span><strong>gr</strong> Grok</span>
               </div>
             </div>
           </div>
         </div>
       </section>
+      <TrustSection />
     </>
   );
+}
+
+function TrustSection() {
+  return (
+    <section className="trust-section" id="faq">
+      <div className="trust-inner">
+        <div className="trust-heading">
+          <p className="section-label">FAQ</p>
+          <h2>Small print, plainly said.</h2>
+        </div>
+        <div className="faq-list">
+          {faqItems.map((item, index) => (
+            <details className="faq-item" key={item.question} open={index === 0}>
+              <summary>{item.question}</summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const faqItems = [
+  {
+    question: 'What data does skim.page see?',
+    answer:
+      'skim.page sees the article URL you put in the address bar so it can build the prompt. The app runs in your browser and does not scrape the article, create accounts, or store prompts. Hosting infrastructure, your browser history, and the AI app you open may still receive the article URL or generated prompt.',
+  },
+  {
+    question: 'Does this bypass paywalls?',
+    answer:
+      'No. skim.page does not unlock paid content, fetch article text, or work around publisher access rules. It only hands the article URL to an AI app you already choose to use.',
+  },
+  {
+    question: 'Does this summarize the article itself?',
+    answer:
+      'No. skim.page generates a prompt and opens your selected AI app. That AI app handles any summarization, subject to its own access, login, and URL-reading behavior.',
+  },
+  {
+    question: 'Will skim.page stay free?',
+    answer:
+      'skim.page is just a static URL shortcut. There is no backend summarizer, no account system, and no model bill for skim.page to pay, so the running costs stay tiny.',
+  },
+    {
+      question: 'What can stop the handoff from opening?',
+      answer:
+      'You may need to be logged in to the AI app you choose, and provider URL behavior can vary. The copyable prompt stays on skim.page as a fallback.',
+    },
+  {
+    question: 'Who makes skim.page?',
+    answer:
+      'skim.page is an evolving small project by Praneeth. The source is public on GitHub, and feedback is welcome through GitHub issues.',
+  },
+];
+
+const summaryStyleDescriptions: Record<LensId, string> = {
+  default: 'A quick TL;DR, three takeaways, and why it matters.',
+  eli5: 'Plain-language bullets and an analogy for fast understanding.',
+  research: 'Main argument, evidence, assumptions, and one open question.',
+  investor: 'Bull case, bear case, market implication, and key risk.',
+};
+
+type DropdownOption<T extends string> = {
+  label: string;
+  value: T;
+};
+
+type DropdownProps<T extends string> = {
+  label: string;
+  onChange: (value: T) => void;
+  options: DropdownOption<T>[];
+  value: T;
+};
+
+function Dropdown<T extends string>({ label, onChange, options, value }: DropdownProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        dropdownRef.current &&
+        event.target instanceof Node &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  return (
+    <div className="select-field" ref={dropdownRef}>
+      <span className="section-label">{label}</span>
+      <div className={isOpen ? 'custom-select custom-select-open' : 'custom-select'}>
+        <button
+          aria-expanded={isOpen}
+          className="custom-select-trigger"
+          onClick={() => setIsOpen((current) => !current)}
+          type="button"
+        >
+          {selectedOption.label}
+        </button>
+        {isOpen ? (
+          <div className="custom-select-menu" role="listbox">
+            {options.map((option) => (
+              <button
+                aria-selected={option.value === value}
+                className="custom-select-option"
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                role="option"
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function buildSkimPrefix(lensId: LensId, providerId: ProviderId): string {
+  const lensPrefix = lenses[lensId].demoSuffix;
+  const providerSuffix = providerId === DEFAULT_PROVIDER_ID ? '' : `/${providers[providerId].shortAlias}`;
+
+  return `skim.page${lensPrefix}${providerSuffix}/`;
 }
 
 function getNextLensId(currentLensId: LensId): LensId {
@@ -284,11 +466,18 @@ function getNextLensId(currentLensId: LensId): LensId {
   return lensIds[nextIndex];
 }
 
-function buildSkimPrefix(providerId: ProviderId, lensId: LensId): string {
-  const providerPrefix = buildProviderPathPrefix(providerId);
-  const lensSuffix = lenses[lensId].demoSuffix;
+function buildSummaryPromptUrl(
+  articleUrl: string,
+  providerId: ProviderId,
+  lensId: LensId,
+): string {
+  const params = new URLSearchParams({
+    url: articleUrl.trim(),
+    provider: providerId,
+    lens: lensId,
+  });
 
-  return `skim.page${providerPrefix}${lensSuffix}/`;
+  return `/?${params.toString()}`;
 }
 
 function formatLensTabLabel(lens: (typeof lenses)[LensId]): string {
@@ -315,11 +504,11 @@ type PromptFallbackProps = {
 
 function PromptFallback({ request }: PromptFallbackProps) {
   const [copyLabel, setCopyLabel] = useState('Copy prompt');
-  const [popupBlocked, setPopupBlocked] = useState(false);
   const promptRef = useRef<HTMLDivElement>(null);
   const didAutoOpen = useRef(false);
   const lens = lenses[request.lensId];
   const provider = providers[request.providerId];
+  const isPromptCopied = copyLabel === 'Copied';
 
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', lens.color);
@@ -327,25 +516,13 @@ function PromptFallback({ request }: PromptFallbackProps) {
   }, [lens.color]);
 
   useEffect(() => {
-    if (
-      request.handoffMode === 'copyOnly' ||
-      didAutoOpen.current ||
-      openedHandoffUrls.has(request.handoffUrl)
-    ) {
+    if (request.handoffMode === 'copyOnly' || didAutoOpen.current) {
       return;
     }
 
     didAutoOpen.current = true;
-    openedHandoffUrls.add(request.handoffUrl);
 
-    const popup = window.open(request.handoffUrl, '_blank');
-
-    if (popup) {
-      popup.opener = null;
-      return;
-    }
-
-    setPopupBlocked(true);
+    window.location.replace(request.handoffUrl);
   }, [request.handoffMode, request.handoffUrl]);
 
   async function copyPrompt() {
@@ -379,11 +556,10 @@ function PromptFallback({ request }: PromptFallbackProps) {
             !
           </span>
           <div>
-            <strong>{popupBlocked ? 'Pop-up blocked.' : 'Opening automatically.'}</strong>
+            <strong>Prompt ready.</strong>
             <span>
-              {popupBlocked
-                ? ` Allow pop-ups and redirects for skim.page once, then ${provider.label} will open automatically next time.`
-                : ` If ${provider.label} does not open, allow pop-ups and redirects for skim.page once.`}
+              If {provider.label} does not open with the prompt, copy it here and paste it into
+              your AI app.
             </span>
           </div>
         </div>
@@ -393,7 +569,7 @@ function PromptFallback({ request }: PromptFallbackProps) {
           <div className="lens-desc">{lens.desc}</div>
         </div>
         <div className="result-provider">
-          <span>Open in</span>
+          <span>AI app</span>
           <strong>{provider.label}</strong>
         </div>
         <p className="provider-note">{provider.note}</p>
@@ -405,13 +581,15 @@ function PromptFallback({ request }: PromptFallbackProps) {
           <a
             className="action-button action-primary"
             href={request.handoffUrl}
-            rel="noreferrer"
-            target="_blank"
           >
             Open {provider.label}
           </a>
-          <button className="action-button" onClick={copyPrompt} type="button">
-            {copyLabel}
+          <button
+            className={isPromptCopied ? 'action-button copy-success' : 'action-button'}
+            onClick={copyPrompt}
+            type="button"
+          >
+            {isPromptCopied ? 'Copied' : copyLabel}
           </button>
         </div>
       </section>
@@ -445,15 +623,70 @@ function MalformedState({ parsed }: MalformedStateProps) {
   );
 }
 
+function PrivacyPage() {
+  return (
+    <main className="static-page">
+      <section className="static-section">
+        <p className="section-label">Privacy</p>
+        <h1 className="static-title">Privacy, in normal words.</h1>
+        <div className="static-copy">
+          <p>
+            skim.page is a client-only prompt helper. It does not have user accounts, a database,
+            article scraping, or in-app AI summarization.
+          </p>
+          <p>
+            When you use a skim.page URL, the article URL appears in your browser address bar and
+            is sent to skim.page hosting so the page can load. The generated prompt is created in
+            your browser. If you open an AI app, that app receives the prompt and article URL
+            according to its own product behavior and privacy policy.
+          </p>
+          <p>
+            skim.page does not intentionally store prompts or article URLs. Browser history,
+            server/CDN logs, referrers, and third-party AI apps may still keep their own records.
+          </p>
+        </div>
+        <div className="static-actions">
+          <a className="action-button action-primary" href="/">
+            Back home
+          </a>
+          <a className="action-button" href={SOURCE_URL} rel="noreferrer" target="_blank">
+            View source
+          </a>
+          <a className="action-button" href={FEEDBACK_URL} rel="noreferrer" target="_blank">
+            Send feedback
+          </a>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function Footer() {
   return (
     <footer>
       <div className="footer-logo">
         skim<span>.</span>page
       </div>
-      <div className="footer-note">Opens your AI app · No account needed · Free forever</div>
+      <div className="footer-note">
+        <a href="/privacy">Privacy</a>
+        <a href={SOURCE_URL} rel="noreferrer" target="_blank">
+          Source
+        </a>
+        <a href={FEEDBACK_URL} rel="noreferrer" target="_blank">
+          Feedback
+        </a>
+        <a href={`${SOURCE_URL}/commits/main`} rel="noreferrer" target="_blank">
+          Changelog
+        </a>
+      </div>
     </footer>
   );
+}
+
+function isStaticPage(location: Location, pageName: string): boolean {
+  const path = location.pathname.replace(/^\/+|\/+$/g, '');
+
+  return path === pageName && !location.search;
 }
 
 function fallbackCopyText(text: string): boolean {

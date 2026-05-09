@@ -22,7 +22,7 @@ export type ParsedLocation =
     }
   | { kind: 'malformed'; message: string; example: string };
 
-const EXAMPLE_URL = 'https://skim.page/cl/i/https://example.com/article';
+const EXAMPLE_URL = 'https://skim.page/i/cl/https://example.com/article';
 
 export function parseLocation(location: Location): ParsedLocation {
   const params = new URLSearchParams(location.search);
@@ -40,12 +40,12 @@ export function parseLocation(location: Location): ParsedLocation {
     return { kind: 'landing' };
   }
 
-  const { lensCandidate, providerCandidate, urlCandidate } = splitProviderLensAndUrl(rawPath);
+  const { lensCandidate, providerCandidate, urlCandidate } = splitLensProviderAndUrl(rawPath);
 
   if (!urlCandidate) {
     return {
       kind: 'malformed',
-      message: 'We could not detect an article URL after the selected provider or lens.',
+      message: 'We could not detect an article URL after the selected summary style or AI app.',
       example: EXAMPLE_URL,
     };
   }
@@ -118,7 +118,7 @@ function extractRawPath(location: Location): string {
   return withoutHash.replace(/^\/+/, '');
 }
 
-function splitProviderLensAndUrl(rawPath: string): {
+function splitLensProviderAndUrl(rawPath: string): {
   lensCandidate: string | null;
   providerCandidate: string | null;
   urlCandidate: string;
@@ -136,6 +136,10 @@ function splitProviderLensAndUrl(rawPath: string): {
   const firstSegment = rawPath.slice(0, firstSlash);
   const rest = rawPath.slice(firstSlash + 1);
 
+  if (isLensAlias(firstSegment)) {
+    return splitProviderAndUrl(rest, firstSegment);
+  }
+
   if (isProviderAlias(firstSegment)) {
     return splitLensAndUrl(rest, firstSegment);
   }
@@ -145,6 +149,50 @@ function splitProviderLensAndUrl(rawPath: string): {
   }
 
   return splitLensAndUrl(rawPath, null);
+}
+
+function splitProviderAndUrl(
+  rawPath: string,
+  lensCandidate: string | null,
+): {
+  lensCandidate: string | null;
+  providerCandidate: string | null;
+  urlCandidate: string;
+} {
+  const firstSlash = rawPath.indexOf('/');
+
+  if (firstSlash === -1) {
+    return {
+      lensCandidate,
+      providerCandidate: null,
+      urlCandidate: rawPath,
+    };
+  }
+
+  const firstSegment = rawPath.slice(0, firstSlash);
+  const rest = rawPath.slice(firstSlash + 1);
+
+  if (isProviderAlias(firstSegment)) {
+    return {
+      lensCandidate,
+      providerCandidate: firstSegment,
+      urlCandidate: rest,
+    };
+  }
+
+  if (isLikelyUnsupportedProviderAlias(firstSegment, rest)) {
+    return {
+      lensCandidate,
+      providerCandidate: firstSegment,
+      urlCandidate: rest,
+    };
+  }
+
+  return {
+    lensCandidate,
+    providerCandidate: null,
+    urlCandidate: rawPath,
+  };
 }
 
 function splitLensAndUrl(
@@ -212,9 +260,7 @@ function isLikelyUnsupportedLens(firstSegment: string, rest: string): boolean {
     return false;
   }
 
-  const decodedRest = safelyDecode(rest);
-
-  return /^https?:\/\//i.test(decodedRest) || /^[^/\s]+\.[^/\s]+/.test(decodedRest);
+  return isLikelyArticleStart(rest);
 }
 
 function isLikelyUnsupportedProvider(rest: string): boolean {
@@ -228,4 +274,18 @@ function isLikelyUnsupportedProvider(rest: string): boolean {
   const possibleUrl = rest.slice(firstSlash + 1);
 
   return isLensAlias(possibleLens) && isLikelyUnsupportedLens(possibleLens, possibleUrl);
+}
+
+function isLikelyUnsupportedProviderAlias(firstSegment: string, rest: string): boolean {
+  if (!firstSegment || firstSegment.includes('.') || firstSegment.includes(':')) {
+    return false;
+  }
+
+  return isLikelyArticleStart(rest);
+}
+
+function isLikelyArticleStart(value: string): boolean {
+  const decodedValue = safelyDecode(value);
+
+  return /^https?:\/\//i.test(decodedValue) || /^[^/\s]+\.[^/\s]+/.test(decodedValue);
 }
