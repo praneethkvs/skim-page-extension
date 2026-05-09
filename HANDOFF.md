@@ -15,10 +15,10 @@ The app is a client-only Vite + React + TypeScript MVP for `skim.page`, a bookma
 Current product behavior:
 
 - User prepends `skim.page/` to an article URL.
-- Optional summary style and AI app shortcuts may be added before the article URL.
-- Preferred path order is summary style first, then AI app: `skim.page/i/cl/...`.
+- Optional summary style and AI assistant shortcuts may be added before the article URL.
+- Preferred path order is summary style first, then AI assistant: `skim.page/i/cl/...`.
 - App builds a prompt from the selected summary style and article URL.
-- App redirects the current tab to the selected AI app with `window.location.replace(handoffUrl)`.
+- App redirects the current tab to the selected AI assistant with `window.location.replace(handoffUrl)`.
 - Copyable fallback page remains available for copy-only or interrupted handoffs.
 
 Implemented UI/product work:
@@ -27,13 +27,19 @@ Implemented UI/product work:
 - Demo is the first meaningful product surface, not just decorative typography.
 - URL field includes a dynamic colored `skim.page/.../` prefix.
 - Real article URLs are prefilled by summary style.
-- Dropdowns are custom styled, Summary style first and AI app second.
+- Dropdowns are custom styled, Summary style first and AI assistant second.
 - Summary style options: Summary, ELI5, Research, Investor.
-- AI app options: ChatGPT, Gemini, Claude, Perplexity, Grok.
+- AI assistant options: ChatGPT, Gemini, Claude, Perplexity, Grok.
 - Prompt preview is collapsed by default and expands to a compact fixed height.
-- Privacy page, FAQ, source link, feedback link, changelog link, and footer cleanup are in place.
+- Privacy page, compact FAQ, source link, feedback link, and footer cleanup are in place.
+- Current FAQ is intentionally compact: data, paywalls, who summarizes, and handoff/sign-in limitations.
 - Known limitations are in FAQ, not a separate limitations panel.
 - Same-tab handoff replaced old new-tab/popup behavior.
+- Hero copy is `Get the TL;DR. ASAP.` with `TL;DR.` emphasized in accent color and `ASAP.` black.
+- Hero subcopy is `Just add skim.page/ before any article URL and summarize it instantly.`
+- Hero badge says `Use with your preferred AI Assistant`.
+- Footer shows only Privacy, Source, and Feedback; no Changelog link.
+- Mobile layout was tightened after Browser plugin audit: compact URL row, fixed-nav anchor offsets, and wrapping shortcut examples.
 
 Current local browser context reported by the user has often been:
 
@@ -137,7 +143,7 @@ package.json       Scripts and package ranges
 package-lock.json  Exact installed package versions
 src/App.tsx        UI states, landing, fallback, privacy, interactions
 src/lenses.ts      Summary style metadata, aliases, prompt templates
-src/providers.ts   AI app aliases and handoff URL builders
+src/providers.ts   AI assistant aliases and handoff URL builders
 src/url.ts         URL parsing, normalization, request construction
 src/styles.css     App styling and responsive behavior
 dist/              Build output, generated; do not hand-edit
@@ -196,7 +202,7 @@ investor: investor, i    -> displayed as Investor
 
 Internal id `default` must remain stable even though the display label is now `Summary`.
 
-### AI App IDs And Aliases
+### AI Assistant IDs And Aliases
 
 ```text
 chatgpt:    ch, chatgpt, openai
@@ -238,7 +244,7 @@ Normalization expectations:
 - `https:/example.com/article` normalizes to `https://example.com/article`.
 - `example.com/article` normalizes to `https://example.com/article`.
 - Missing/unknown summary style falls back to Summary.
-- Missing/unknown AI app falls back to ChatGPT.
+- Missing/unknown AI assistant falls back to ChatGPT.
 
 ### Prompt Output
 
@@ -259,7 +265,7 @@ Research: TLDR, main argument, 3 evidence/claim bullets, limitations, one open q
 Investor: TLDR, 2-bullet bull case, 2-bullet bear case, market implication, key metric/claim/risk.
 ```
 
-### AI App Handoff URLs
+### AI Assistant Handoff URLs
 
 ```text
 ChatGPT:    https://chatgpt.com/?prompt={encodedPrompt}
@@ -284,7 +290,7 @@ The generated prompt page is usually visible only briefly before same-tab redire
 Top fallback alert with circular !
 Generated prompt label
 Summary style title and description
-AI app label and provider name
+AI assistant label and provider name
 Provider-specific note
 Normalized article URL
 Generated prompt block
@@ -292,7 +298,25 @@ Open {Provider}
 Copy prompt
 ```
 
-Fallback alert copy should communicate that the prompt is ready and can be copied if the AI app does not receive it. It should not mention pop-up permissions.
+Fallback alert copy should communicate that the prompt is ready and can be copied if the AI assistant does not receive it. It should not mention pop-up permissions.
+
+### Landing FAQ Items
+
+Current FAQ questions:
+
+```text
+What data does skim.page see?
+Does this bypass paywalls?
+Does this summarize the article itself?
+What can stop the handoff from opening?
+```
+
+Removed by request:
+
+```text
+Will skim.page stay free?
+Who makes skim.page?
+```
 
 ## Recent Test Results
 
@@ -307,16 +331,16 @@ transforming...
 30 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/index.html                   1.73 kB | gzip:  0.64 kB
-dist/assets/index-ClnTXDpO.css   18.40 kB | gzip:  4.11 kB
-dist/assets/index-j9M0YhY6.js   165.22 kB | gzip: 52.84 kB
-built in 254ms
+dist/index.html                   1.68 kB | gzip:  0.64 kB
+dist/assets/index-DwWt9blr.css   18.82 kB | gzip:  4.18 kB
+dist/assets/index-BZ6YvQfh.js   165.08 kB | gzip: 52.76 kB
+built in 252ms
 ```
 
 Browser checks performed recently:
 
 - Landing page rendered locally at `http://127.0.0.1:5174/`.
-- Dropdown labels verified in order: `Summary style`, then `AI app`.
+- Dropdown labels verified in order: `Summary style`, then `AI assistant`.
 - Prefix verified as `skim.page/i/cl/` for Investor + Claude.
 - `/i/cl/https://example.com/article` parsed as Investor + Claude.
 - `/cl/i/https://example.com/article` still parsed as Investor + Claude.
@@ -325,8 +349,14 @@ Browser checks performed recently:
   - Navigated to `http://127.0.0.1:5174/i/cl/https://example.com/article`.
   - Tab redirected to `https://claude.ai/new...`.
   - Browser Back returned to `https://example.com/article`.
-  - No extra AI app tab was created.
+  - No extra AI assistant tab was created.
 - Earlier Gemini handoff verification showed generated URL starts with `https://www.google.com/search?udm=50&q=`.
+- Claude sign-in note appears only when Claude is selected and disappears for Gemini/other assistants.
+- Browser plugin mobile layout audit at `localhost:5173` verified:
+  - URL prefix, article URL, and Try it button stay on one compact row.
+  - `How it works` and `FAQ` anchor jumps account for fixed nav.
+  - Long shortcut examples wrap instead of overflowing.
+  - FAQ cards remain readable after removing the free/maker questions.
 
 Known testing caveat:
 
@@ -334,20 +364,24 @@ Known testing caveat:
 
 ## Recent Decisions
 
-- Summary style is primary; AI app is secondary.
-- Prefix/path order is summary style first, then AI app.
+- Summary style is primary; AI assistant is secondary.
+- Prefix/path order is summary style first, then AI assistant.
 - Legacy AI-app-first URLs remain supported.
 - Default summary style display name is `Summary`; internal id remains `default`.
 - Demo input uses real public article URLs, matched to the active summary style.
 - User-edited article URLs are not overwritten by style changes.
 - Generated prompt preview is collapsed by default.
 - Expanded prompt preview was shortened by roughly two lines.
+- Hero subcopy no longer ends with "with your AI assistant"; that phrase was removed for brevity.
+- `TL;DR.` is the accent-colored hero emphasis; `ASAP.` is black.
+- Claude-only sign-in note was added under the AI assistant dropdown.
 - Native select controls were replaced with custom dropdowns; option rows are styled like selected rows.
 - Same-tab redirect replaced the previous new-tab/popup approach.
 - `window.location.replace` is intentional so Back returns to the article rather than stopping on skim.page.
 - Gemini web handoff uses Google AI Mode search (`udm=50`), not direct Gemini prompt injection.
-- Privacy/FAQ/source/feedback/changelog trust builders are part of the landing page.
-- Footer no longer includes maker/free/version text; maker identity is in FAQ.
+- Privacy/FAQ/source/feedback trust builders are part of the landing page.
+- Footer no longer includes maker/free/version/changelog text.
+- FAQ no longer includes free or maker questions.
 - Known limitations moved into FAQ.
 
 ## Open Challenges
@@ -356,7 +390,7 @@ Known testing caveat:
 - ChatGPT, Claude, Perplexity, Grok, and Google may require login or may ignore/query-handle prompts differently over time.
 - Gemini via Google AI Mode depends on Google Search behavior, account state, region, and rollout.
 - No automated test suite exists yet; verification is currently build plus browser checks.
-- Production has not necessarily been redeployed after the latest local UI/handoff edits.
+- Production has not necessarily been redeployed after the latest local UI/handoff/mobile-layout edits.
 - The original `skim.page.html` is stale relative to the React app and should be treated as visual reference only.
 - Some CSS class names still include `popup-alert` for historical styling, but current copy/behavior is fallback alert, not popup permission.
 
@@ -385,7 +419,7 @@ Phase 2 candidates:
 - Use `apply_patch` for manual file edits.
 - Use `rg` for searching.
 - Run `npm run build` after implementation changes.
-- Prefer existing modules and data-driven summary style / AI app patterns.
+- Prefer existing modules and data-driven summary style / AI assistant patterns.
 - Do not hand-edit `dist/`.
 - Do not create virtualenvs, conda envs, Poetry projects, databases, backends, auth, scraping, analytics, or direct API summarization unless the user explicitly changes scope.
 - Do not upgrade packages or switch to pnpm/yarn unless asked.

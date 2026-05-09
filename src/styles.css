@@ -12,7 +12,10 @@
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 82px;
+}
 
 body {
   font-family: 'DM Sans', sans-serif;
@@ -104,7 +107,7 @@ nav.nav-scrolled {
   font-weight: 400;
   line-height: 0.98;
   color: var(--black);
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   margin-bottom: 12px;
 }
 
@@ -341,6 +344,14 @@ nav.nav-scrolled {
   margin-bottom: 0;
 }
 
+.provider-inline-note {
+  max-width: 320px;
+  margin: 8px 0 0;
+  color: #5D5D5D;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .provider-label {
   margin-bottom: 0;
 }
@@ -532,13 +543,8 @@ nav.nav-scrolled {
 .lens-desc {
   font-size: 16px;
   color: var(--mid);
-}
-
-.lens-plain-desc {
-  flex-basis: 100%;
-  color: var(--mid);
-  font-size: 15px;
   line-height: 1.5;
+  margin: 0;
 }
 
 .preview-shell {
@@ -629,6 +635,7 @@ nav.nav-scrolled {
   border-top: 1px solid var(--light);
   border-bottom: 1px solid var(--light);
   padding: 58px 48px;
+  scroll-margin-top: 82px;
 }
 
 .how-inner {
@@ -734,6 +741,8 @@ nav.nav-scrolled {
   padding: 5px 7px;
   border-radius: 3px;
   color: var(--black);
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .shortcut-title {
@@ -773,6 +782,7 @@ nav.nav-scrolled {
 /* -- TRUST -- */
 .trust-section {
   padding: 58px 48px 20px;
+  scroll-margin-top: 82px;
 }
 
 .trust-inner {
@@ -1098,10 +1108,11 @@ footer {
   .provider-tab { flex: 1 1 calc(50% - 8px); justify-content: center; }
   .lens-label { margin-bottom: 14px; }
   .summary-demo { padding: 18px; }
-  .url-input-row { grid-template-columns: 1fr; }
-  .url-prefix { max-width: none; min-height: 44px; justify-content: center; }
-  .url-input-row input { border-left: 0; border-top: 1.5px solid var(--black); }
-  .summary-submit { border-left: 0; border-top: 1.5px solid var(--black); }
+  .url-input-row { grid-template-columns: minmax(104px, max-content) minmax(0, 1fr) minmax(72px, max-content); }
+  .url-prefix { max-width: 128px; min-height: 44px; justify-content: flex-start; }
+  .url-input-row input { border-left: 1.5px solid var(--black); border-top: 0; padding-left: 12px; padding-right: 12px; }
+  .summary-submit { border-left: 1.5px solid var(--black); border-top: 0; padding-left: 14px; padding-right: 14px; }
+  .shortcut-example { display: grid; grid-template-columns: minmax(0, 1fr); }
   .demo-section .prompt-block { height: 340px; }
   .result-page { padding: 120px 24px 48px; }
   .static-page { padding: 120px 24px 48px; }

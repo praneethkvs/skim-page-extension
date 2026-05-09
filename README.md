@@ -2,7 +2,7 @@
 
 `skim.page` is a lightweight URL-prepend shortcut for turning article URLs into AI-ready summary prompts.
 
-The Phase 1 product is client-only: a user prepends `skim.page/` to an article URL, optionally adds a summary style and AI app shortcut, then skim.page builds a prompt and redirects the current tab to the selected AI app.
+The Phase 1 product is client-only: a user prepends `skim.page/` to an article URL, optionally adds a summary style and AI assistant shortcut, then skim.page builds a prompt and redirects the current tab to the selected AI assistant.
 
 ## Purpose And Scope
 
@@ -11,11 +11,11 @@ Phase 1 includes:
 - A Vite + React + TypeScript single-page app.
 - A landing page with a working URL demo, real example article URLs, and prompt preview.
 - Four built-in summary styles: Summary, ELI5, Research, Investor.
-- Five AI app families: ChatGPT, Gemini, Claude, Perplexity, Grok.
+- Five AI assistant families: ChatGPT, Gemini, Claude, Perplexity, Grok.
 - Path-style and query-param URL parsing.
-- Same-tab handoff to the selected AI app.
+- Same-tab handoff to the selected AI assistant.
 - Copyable fallback prompt page for interrupted or copy-only handoffs.
-- Privacy page, FAQ, source/feedback/changelog links, and known limitations in FAQ copy.
+- Privacy page, compact FAQ, source/feedback links, and known limitations in FAQ copy.
 - Static hosting assumptions with Vercel SPA rewrites.
 
 Phase 1 does not include:
@@ -87,7 +87,7 @@ Seeds:
 src/
   App.tsx        Landing page, fallback page, privacy page, malformed state, interactions
   lenses.ts     Summary style metadata, aliases, prompts, preview prompt generation
-  providers.ts  AI app aliases, handoff modes, handoff URL builders
+  providers.ts  AI assistant aliases, handoff modes, handoff URL builders
   url.ts        Location parsing, URL normalization, request construction
   styles.css    Landing, demo, fallback, FAQ, privacy, footer, responsive styling
 ```
@@ -105,9 +105,9 @@ Other important files:
 
 ## URL Contract
 
-Default summary style is Summary. Default AI app is ChatGPT.
+Default summary style is Summary. Default AI assistant is ChatGPT.
 
-Preferred path order is **summary style first, AI app second**:
+Preferred path order is **summary style first, AI assistant second**:
 
 ```text
 /https://example.com/article
@@ -137,10 +137,10 @@ Normalization rules:
 - Tolerate hosted redirects that collapse `https://` in path-style article URLs to `https:/`.
 - Add `https://` to likely domain/path inputs without a protocol.
 - Missing or unsupported summary style falls back to Summary.
-- Missing or unsupported AI app falls back to ChatGPT.
+- Missing or unsupported AI assistant falls back to ChatGPT.
 - Malformed article input shows a graceful error state.
 
-## AI App Contract
+## AI Assistant Contract
 
 Provider aliases:
 
@@ -171,7 +171,7 @@ Perplexity: https://www.perplexity.ai/?q={encodedPrompt}
 Grok:       https://grok.com/?q={encodedPrompt}
 ```
 
-Handoff behavior is best-effort. For normal web handoffs, skim.page redirects the current tab with `window.location.replace(handoffUrl)`. This avoids pop-up permissions and extra tabs. If the user prepended `skim.page/` from an article tab, pressing Back from the AI app returns to the article because skim.page replaces itself in browser history.
+Handoff behavior is best-effort. For normal web handoffs, skim.page redirects the current tab with `window.location.replace(handoffUrl)`. This avoids pop-up permissions and extra tabs. If the user prepended `skim.page/` from an article tab, pressing Back from the AI assistant returns to the article because skim.page replaces itself in browser history.
 
 Gemini note: Gemini currently opens through Google AI Mode search using `udm=50`. This is useful but not a guaranteed public API.
 
@@ -237,19 +237,22 @@ Provide:
 ## UI Decisions
 
 - Keep the product name as `skim.page`.
-- Main headline stays plain: "Summarize articles with your AI app."
-- One memorable instruction sits under the hero: add `skim.page/` in front of an article URL.
+- Main headline is "Get the TL;DR. ASAP."
+- One memorable instruction sits under the hero: add `skim.page/` before any article URL and summarize it instantly.
 - The demo is the main focus below the hero.
 - URL input is prefilled with a real example article URL, chosen by selected summary style.
-- Summary style is primary; AI app is secondary.
-- Dropdown order is Summary style first, then AI app.
-- Prefix order is summary style first, then AI app, for example `skim.page/i/cl/`.
+- Summary style is primary; AI assistant is secondary.
+- Dropdown order is Summary style first, then AI assistant.
+- Prefix order is summary style first, then AI assistant, for example `skim.page/i/cl/`.
 - Default style is displayed as "Summary"; internal id and alias remain `default`.
-- ChatGPT is shown as the default AI app; hidden alias `ch` still works.
+- ChatGPT is shown as the default AI assistant; hidden alias `ch` still works.
 - Prompt preview is expandable/collapsible and collapsed by default.
 - Expanded prompt preview height is intentionally compact.
-- Summary style and AI app dropdown option rows are custom styled.
-- Footer keeps only brand plus Privacy, Source, Feedback, Changelog.
+- Summary style and AI assistant dropdown option rows are custom styled.
+- Footer keeps only brand plus Privacy, Source, and Feedback.
+- Mobile layout keeps the URL prefix, article URL, and Try it button on one compact row.
+- In-page anchors account for the fixed nav so `How it works` and `FAQ` do not land hidden under the header.
+- Long URL shortcut examples wrap on mobile instead of overflowing.
 - Known limitations live in the FAQ instead of a separate panel.
 
 ## Real Demo Articles
@@ -267,10 +270,12 @@ While the user is still using an example, switching summary style swaps the arti
 
 ## Recent Decisions
 
-- Trust builders were added: Privacy page, FAQ, source link, feedback link, changelog link, maker identity in FAQ, and limitations in FAQ.
-- Messaging shifted to "A bookmarkable URL shortcut for AI summaries" and "AI app" consistently.
+- Trust builders were added: Privacy page, FAQ, source link, feedback link, and limitations in FAQ.
+- Messaging shifted to "Get the TL;DR. ASAP." and "AI assistant" consistently.
+- Hero emphasis is on `TL;DR.` in the active accent color; `ASAP.` stays black.
+- Hero subheading is `Just add skim.page/ before any article URL and summarize it instantly.`
 - Landing layout moved from side-by-side to hero on top, demo below.
-- Summary style is the primary concept; AI app is secondary.
+- Summary style is the primary concept; AI assistant is secondary.
 - URL shortcut order changed to summary-style-first: `skim.page/i/cl/...`.
 - Legacy AI-app-first order remains parseable.
 - Default summary style label changed from "Default" to "Summary"; internal id remains `default`.
@@ -279,8 +284,12 @@ While the user is still using an example, switching summary style swaps the arti
 - Generated prompt preview is collapsed by default and shorter when expanded.
 - Generated prompt handoff changed from opening a new tab to same-tab redirect via `window.location.replace`.
 - Same-tab redirect is intentionally kept to avoid pop-up permissions and extra tabs.
+- Claude has a conditional note under the AI assistant dropdown: `Requires Claude sign-in before the prompt can open.`
+- FAQ was trimmed to four questions: data, paywalls, who summarizes, and handoff/sign-in limitations.
+- Footer Changelog link was removed; Source and Feedback link to GitHub repo and GitHub issues.
+- Mobile layout was audited in the in-app browser and tightened for URL row, anchor jumps, and shortcut wrapping.
 - Gemini uses Google AI Mode search (`https://www.google.com/search?udm=50&q=...`) for the web handoff.
-- Browser extension, custom summary styles, saved AI app defaults, and model-specific routing are future work.
+- Browser extension, custom summary styles, saved AI assistant defaults, and model-specific routing are future work.
 
 ## Deployment
 
@@ -318,21 +327,23 @@ transforming...
 30 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/index.html                   1.73 kB | gzip:  0.64 kB
-dist/assets/index-ClnTXDpO.css   18.40 kB | gzip:  4.11 kB
-dist/assets/index-j9M0YhY6.js   165.22 kB | gzip: 52.84 kB
-built in 254ms
+dist/index.html                   1.68 kB | gzip:  0.64 kB
+dist/assets/index-DwWt9blr.css   18.82 kB | gzip:  4.18 kB
+dist/assets/index-BZ6YvQfh.js   165.08 kB | gzip: 52.76 kB
+built in 252ms
 ```
 
 Recent browser checks:
 
-- Landing dropdowns render in order: `Summary style`, then `AI app`.
+- Landing dropdowns render in order: `Summary style`, then `AI assistant`.
 - Prefix renders as `skim.page/i/cl/` for Investor + Claude.
 - New order `/i/cl/https://example.com/article` parses as Investor + Claude.
 - Legacy order `/cl/i/https://example.com/article` still parses as Investor + Claude.
 - Same-tab handoff from `http://127.0.0.1:5174/i/cl/https://example.com/article` redirects to `https://claude.ai/new...`.
 - Pressing Back from the Claude handoff returned to `https://example.com/article`.
-- No extra AI app tab was created during the same-tab handoff test.
+- No extra AI assistant tab was created during the same-tab handoff test.
+- Claude sign-in note appears only when Claude is selected and disappears for other AI assistants.
+- Mobile layout audit verified compact URL row, anchor offset for `How it works`, shortcut wrapping, and FAQ spacing in the in-app browser at `localhost:5173`.
 - `npm run build` passes.
 
 Known testing caveat:
@@ -347,7 +358,7 @@ Future browser extension features:
 - Pick built-in summary styles.
 - Create and save custom summary styles with custom prompts.
 - Store extension-level defaults.
-- Store optional AI app/model preferences.
+- Store optional AI assistant/model preferences.
 - For Gemini, open Gemini directly, inject the generated prompt, optionally submit, and preserve copy fallback if injection fails.
 
 Future multi-model support:

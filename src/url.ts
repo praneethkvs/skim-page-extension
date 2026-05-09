@@ -45,7 +45,7 @@ export function parseLocation(location: Location): ParsedLocation {
   if (!urlCandidate) {
     return {
       kind: 'malformed',
-      message: 'We could not detect an article URL after the selected summary style or AI app.',
+      message: 'We could not detect an article URL after the selected summary style or AI assistant.',
       example: EXAMPLE_URL,
     };
   }

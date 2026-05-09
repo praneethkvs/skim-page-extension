@@ -157,16 +157,15 @@ function LandingPage({
             {activeLens.eyebrow}
           </div>
           <h1 className="hero-headline">
-            Summarize articles
+            Get the <em id="hero-em">TL;DR.</em>
             <br />
-            <em id="hero-em">with your AI app.</em>
+            ASAP.
           </h1>
           <p className="hero-sub">
-            Just add <code>skim.page/</code> in front of any article URL in your browser, and get
-            the TL;DR.
+            Just add <code>skim.page/</code> before any article URL and summarize it instantly.
           </p>
           <p className="hero-built-for">
-            Use with your preferred chatbot
+            Use with your preferred AI Assistant
           </p>
         </section>
 
@@ -211,7 +210,7 @@ function LandingPage({
               </div>
               <div className="provider-control">
                 <Dropdown
-                  label="AI app"
+                  label="AI assistant"
                   onChange={chooseProvider}
                   options={providerIds.map((providerId) => ({
                     label: formatProviderTabLabel(providerId),
@@ -219,16 +218,22 @@ function LandingPage({
                   }))}
                   value={activeProviderId}
                 />
+                {activeProviderId === 'claude' ? (
+                  <p className="provider-inline-note">
+                    Requires Claude sign-in before the prompt can open.
+                  </p>
+                ) : null}
               </div>
             </div>
             <div className="lens-meta">
               <div className="lens-title" id="lens-title">
                 {activeLens.title}
               </div>
-              <div className="lens-desc" id="lens-desc">
-                {activeLens.desc}
-              </div>
-              <p className="lens-plain-desc">{summaryStyleDescriptions[activeLensId]}</p>
+              <p className="lens-desc" id="lens-desc">
+                <span>{activeLens.desc}</span>
+                <span aria-hidden="true"> - </span>
+                <span>{summaryStyleDescriptions[activeLensId]}</span>
+              </p>
             </div>
             <details className="preview-shell">
               <summary className="preview-header">
@@ -265,9 +270,9 @@ function LandingPage({
             </div>
             <div className="how-step">
               <div className="step-num accent-color">3</div>
-              <div className="step-title">Open your AI app</div>
+              <div className="step-title">Open your AI assistant</div>
               <div className="step-body">
-                Your current tab redirects with a ready prompt. If the AI app does not pick it up,
+                Your current tab redirects with a ready prompt. If the AI assistant does not pick it up,
                 copy the prompt from skim.page.
               </div>
             </div>
@@ -282,7 +287,7 @@ function LandingPage({
               <span>uses the Investor summary style in Claude.</span>
             </div>
             <p className="shortcut-note">
-              Add a summary style shortcut, an AI app shortcut, or both before the article URL.
+              Add a summary style shortcut, an AI assistant shortcut, or both before the article URL.
               Full names work too, like <code>skim.page/investor/claude/...</code>.
             </p>
             <div className="shortcut-group">
@@ -295,7 +300,7 @@ function LandingPage({
               </div>
             </div>
             <div className="shortcut-group">
-              <div className="shortcut-title">AI apps</div>
+              <div className="shortcut-title">AI assistants</div>
               <div className="shortcut-badges">
                 <span>ChatGPT (default)</span>
                 <span><strong>ge</strong> Gemini</span>
@@ -337,32 +342,22 @@ const faqItems = [
   {
     question: 'What data does skim.page see?',
     answer:
-      'skim.page sees the article URL you put in the address bar so it can build the prompt. The app runs in your browser and does not scrape the article, create accounts, or store prompts. Hosting infrastructure, your browser history, and the AI app you open may still receive the article URL or generated prompt.',
+      'skim.page sees the article URL you put in the address bar so it can build the prompt. The app runs in your browser and does not scrape the article, create accounts, or store prompts. Hosting infrastructure, your browser history, and the AI assistant you open may still receive the article URL or generated prompt.',
   },
   {
     question: 'Does this bypass paywalls?',
     answer:
-      'No. skim.page does not unlock paid content, fetch article text, or work around publisher access rules. It only hands the article URL to an AI app you already choose to use.',
+      'No. skim.page does not unlock paid content, fetch article text, or work around publisher access rules. It only hands the article URL to an AI assistant you already choose to use.',
   },
   {
     question: 'Does this summarize the article itself?',
     answer:
-      'No. skim.page generates a prompt and opens your selected AI app. That AI app handles any summarization, subject to its own access, login, and URL-reading behavior.',
+      'No. skim.page generates a prompt and opens your selected AI assistant. That AI assistant handles any summarization, subject to its own access, login, and URL-reading behavior.',
   },
   {
-    question: 'Will skim.page stay free?',
+    question: 'What can stop the handoff from opening?',
     answer:
-      'skim.page is just a static URL shortcut. There is no backend summarizer, no account system, and no model bill for skim.page to pay, so the running costs stay tiny.',
-  },
-    {
-      question: 'What can stop the handoff from opening?',
-      answer:
-      'You may need to be logged in to the AI app you choose, and provider URL behavior can vary. The copyable prompt stays on skim.page as a fallback.',
-    },
-  {
-    question: 'Who makes skim.page?',
-    answer:
-      'skim.page is an evolving small project by Praneeth. The source is public on GitHub, and feedback is welcome through GitHub issues.',
+      'Some AI assistants may require sign-in. Claude usually redirects to sign-in unless you already have an active Claude session. Provider URL behavior can vary, and the copyable prompt stays on skim.page as a fallback.',
   },
 ];
 
@@ -559,7 +554,7 @@ function PromptFallback({ request }: PromptFallbackProps) {
             <strong>Prompt ready.</strong>
             <span>
               If {provider.label} does not open with the prompt, copy it here and paste it into
-              your AI app.
+              your AI assistant.
             </span>
           </div>
         </div>
@@ -569,7 +564,7 @@ function PromptFallback({ request }: PromptFallbackProps) {
           <div className="lens-desc">{lens.desc}</div>
         </div>
         <div className="result-provider">
-          <span>AI app</span>
+          <span>AI assistant</span>
           <strong>{provider.label}</strong>
         </div>
         <p className="provider-note">{provider.note}</p>
@@ -637,12 +632,12 @@ function PrivacyPage() {
           <p>
             When you use a skim.page URL, the article URL appears in your browser address bar and
             is sent to skim.page hosting so the page can load. The generated prompt is created in
-            your browser. If you open an AI app, that app receives the prompt and article URL
+            your browser. If you open an AI assistant, that app receives the prompt and article URL
             according to its own product behavior and privacy policy.
           </p>
           <p>
             skim.page does not intentionally store prompts or article URLs. Browser history,
-            server/CDN logs, referrers, and third-party AI apps may still keep their own records.
+            server/CDN logs, referrers, and third-party AI assistants may still keep their own records.
           </p>
         </div>
         <div className="static-actions">
@@ -674,9 +669,6 @@ function Footer() {
         </a>
         <a href={FEEDBACK_URL} rel="noreferrer" target="_blank">
           Feedback
-        </a>
-        <a href={`${SOURCE_URL}/commits/main`} rel="noreferrer" target="_blank">
-          Changelog
         </a>
       </div>
     </footer>

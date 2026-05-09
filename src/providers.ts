@@ -21,7 +21,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'ch',
     aliases: ['ch', 'chatgpt', 'openai'],
     handoffMode: 'prefill',
-    note: 'The AI app should open with the prompt prefilled.',
+    note: 'The AI assistant should open with the prompt prefilled.',
     buildHandoffUrl: (prompt) => `https://chatgpt.com/?prompt=${encodeURIComponent(prompt)}`,
   },
   gemini: {
@@ -30,7 +30,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'ge',
     aliases: ['ge', 'gemini'],
     handoffMode: 'autoRun',
-    note: 'Gemini opens through Google AI Mode search as a best-effort AI app handoff.',
+    note: 'Gemini opens through Google AI Mode search as a best-effort AI assistant handoff.',
     buildHandoffUrl: (prompt) =>
       `https://www.google.com/search?udm=50&q=${encodeURIComponent(prompt)}`,
   },
@@ -40,7 +40,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'cl',
     aliases: ['cl', 'claude'],
     handoffMode: 'prefill',
-    note: 'The AI app should open with the prompt prefilled.',
+    note: 'The AI assistant should open with the prompt prefilled.',
     buildHandoffUrl: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
   },
   perplexity: {
@@ -49,7 +49,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'px',
     aliases: ['px', 'perplexity'],
     handoffMode: 'autoRun',
-    note: 'This AI app may run the prompt immediately.',
+    note: 'This AI assistant may run the prompt immediately.',
     buildHandoffUrl: (prompt) => `https://www.perplexity.ai/?q=${encodeURIComponent(prompt)}`,
   },
   grok: {
@@ -58,7 +58,7 @@ export const providers: Record<ProviderId, Provider> = {
     shortAlias: 'gr',
     aliases: ['gr', 'grok'],
     handoffMode: 'autoRun',
-    note: 'This AI app may run the prompt immediately.',
+    note: 'This AI assistant may run the prompt immediately.',
     buildHandoffUrl: (prompt) => `https://grok.com/?q=${encodeURIComponent(prompt)}`,
   },
 };
