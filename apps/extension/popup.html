@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>skim.page</title>
+    <script type="module" src="/src/popup.ts"></script>
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header>
+        <p class="eyebrow">skim.page</p>
+        <h1>Quick skim</h1>
+      </header>
+
+      <section class="defaults">
+        <span>Default style</span>
+        <strong id="default-style">Loading</strong>
+        <span>AI assistant</span>
+        <strong id="default-provider">Loading</strong>
+      </section>
+
+      <section class="page-context">
+        <span>Current page</span>
+        <strong id="page-title">Loading</strong>
+        <p id="page-url"></p>
+      </section>
+
+      <button id="summarize-in-page" type="button">Summarize in page</button>
+      <button class="button-secondary" id="summarize-page" type="button">Open in AI assistant</button>
+      <button class="button-secondary" id="open-options" type="button">Options</button>
+      <p id="popup-status" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>

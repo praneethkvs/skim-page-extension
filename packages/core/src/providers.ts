@@ -65,6 +65,24 @@ export const providers: Record<ProviderId, Provider> = {
 
 export const providerIds = Object.keys(providers) as ProviderId[];
 
+export type SkimSettings = {
+  styleId: import('./lenses').PromptStyleId;
+  providerId: ProviderId;
+  inPageModeEnabled: boolean;
+  openaiModel: string;
+  openaiWebSearchEnabled: boolean;
+};
+
+export const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
+
+export const DEFAULT_SKIM_SETTINGS: SkimSettings = {
+  styleId: 'default',
+  providerId: DEFAULT_PROVIDER_ID,
+  inPageModeEnabled: false,
+  openaiModel: DEFAULT_OPENAI_MODEL,
+  openaiWebSearchEnabled: false,
+};
+
 export function resolveProviderId(value: string | null | undefined): ProviderId {
   if (!value) {
     return DEFAULT_PROVIDER_ID;
@@ -86,4 +104,8 @@ export function isProviderAlias(value: string | null | undefined): boolean {
   const normalized = value.toLowerCase();
 
   return providerIds.some((providerId) => providers[providerId].aliases.includes(normalized));
+}
+
+export function buildProviderHandoffUrl(providerId: ProviderId, prompt: string): string {
+  return providers[providerId].buildHandoffUrl(prompt);
 }

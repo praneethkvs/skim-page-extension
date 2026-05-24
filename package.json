@@ -1,12 +1,21 @@
 {
-  "name": "skim-page",
+  "name": "skim-page-extension",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "npm --workspace @skim-page/playground-web run dev",
+    "build": "npm --workspace @skim-page/playground-web run build && npm --workspace @skim-page/extension run build",
+    "build:extension": "npm --workspace @skim-page/extension run build",
+    "check:extension": "node scripts/check-extension-build.mjs",
+    "test": "npm run test:core && npm run test:extension-storage && npm run build:extension && npm run check:extension",
+    "test:core": "node scripts/test-core-prompts.mjs",
+    "test:extension-storage": "node scripts/test-extension-storage.mjs",
+    "preview": "npm --workspace @skim-page/playground-web run preview"
   },
   "dependencies": {
     "react": "^18.3.1",

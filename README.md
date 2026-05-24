@@ -1,77 +1,26 @@
-# skim.page
+# skim.page Extension
 
-Get the TL;DR. ASAP.
+This repo is the copied starting point for turning `skim.page` into a Chrome extension.
 
-`skim.page` is a tiny URL shortcut for opening article-summary prompts in the AI assistant you already use.
+The original website app is preserved as a local playground, and shared prompt/provider logic now lives in a core package so the extension can reuse it.
 
-Add `skim.page/` before any article URL:
-
-```text
-skim.page/https://example.com/article
-```
-
-skim.page builds a prompt for that article URL and redirects your current tab to your selected AI assistant.
-
-## Why
-
-Sometimes you do not want to read the whole article first. You want a quick summary, a plain-language explanation, a research-style breakdown, or an investor angle.
-
-skim.page gives you a bookmarkable URL pattern for that.
-
-## Examples
-
-Default summary in ChatGPT:
+## Structure
 
 ```text
-skim.page/https://example.com/article
+apps/
+  extension/       Chrome extension MVP workspace
+  playground-web/  Existing Vite website/demo app
+packages/
+  core/            Shared prompts, provider helpers, and URL parsing
 ```
 
-Investor summary in Claude:
+## Current Workspaces
 
-```text
-skim.page/i/cl/https://example.com/article
-```
+- `@skim-page/extension`: extension app home, ready for Manifest V3 implementation
+- `@skim-page/playground-web`: existing React playground for testing current skim.page behavior
+- `@skim-page/core`: shared summary styles, prompt builders, provider aliases, handoff URL builders, and URL parsing
 
-ELI5 summary in Gemini:
-
-```text
-skim.page/e/ge/https://example.com/article
-```
-
-## Summary Styles
-
-- `Summary` - quick TL;DR, key takeaways, and why it matters
-- `ELI5` - plain language, no jargon
-- `Research` - argument, evidence, assumptions, and open questions
-- `Investor` - bull case, bear case, market implication, and key risk
-
-## AI Assistants
-
-skim.page currently supports:
-
-- ChatGPT
-- Claude
-- Gemini
-- Perplexity
-- Grok
-
-Claude may require an active Claude session before the prompt can open.
-
-## Privacy
-
-skim.page is client-only. It does not scrape articles, run a backend summarizer, create accounts, or store prompts.
-
-The article URL appears in your browser address bar so skim.page can build the prompt. Your browser, hosting infrastructure, and the AI assistant you open may still receive the article URL or generated prompt.
-
-## Limitations
-
-- skim.page does not bypass paywalls.
-- skim.page does not summarize articles itself.
-- AI assistant URL behavior can change.
-- Some assistants may require sign-in.
-- URL-only prompts depend on whether the AI assistant can access the article.
-
-## Development
+## Commands
 
 Install dependencies:
 
@@ -79,24 +28,30 @@ Install dependencies:
 npm install
 ```
 
-Run locally:
+Run the playground website:
 
 ```bash
-npm run dev -- --host 127.0.0.1
+npm run dev
 ```
 
-Build:
+Build the playground website:
 
 ```bash
 npm run build
 ```
 
-## Tech Stack
+Preview the playground build:
 
-- Vite
-- React
-- TypeScript
+```bash
+npm run preview
+```
 
-## Feedback
+## Extension Goals
 
-Open an issue: https://github.com/praneethkvs/skim.page/issues
+- Choose a default AI assistant
+- Add custom prompt styles
+- Right-click selected text to summarize the selection
+- Right-click a page to summarize the current URL
+- Open the selected AI assistant with the generated prompt
+- Store settings in Chrome storage
+- Preserve copy fallback behavior when handoff prefill fails

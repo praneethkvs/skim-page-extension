@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#fcfcfb"/>
+  <rect x="48" y="48" width="1104" height="534" rx="28" fill="#ffffff" stroke="#e6e2dd" stroke-width="2"/>
+  <text x="96" y="126" fill="#111111" font-family="DM Mono, ui-monospace, monospace" font-size="34" font-weight="700" letter-spacing="1">
+    skim<tspan fill="#e8390e">.</tspan>page
+  </text>
+  <rect x="96" y="164" width="310" height="42" rx="4" fill="#e8390e"/>
+  <text x="116" y="192" fill="#ffffff" font-family="DM Mono, ui-monospace, monospace" font-size="22" font-weight="700" letter-spacing="3">
+    QUICK ARTICLE SUMMARY
+  </text>
+  <text x="96" y="312" fill="#111111" font-family="Instrument Serif, Georgia, serif" font-size="100" font-weight="400">
+    Get the <tspan fill="#e8390e" font-style="italic">TL;DR.</tspan>
+  </text>
+  <text x="96" y="410" fill="#111111" font-family="Instrument Serif, Georgia, serif" font-size="100" font-weight="400">
+    ASAP.
+  </text>
+  <text x="96" y="492" fill="#5d5d5d" font-family="DM Sans, Arial, sans-serif" font-size="30" font-weight="500">
+    Add skim.page/ before any article URL and summarize it with AI.
+  </text>
+</svg>

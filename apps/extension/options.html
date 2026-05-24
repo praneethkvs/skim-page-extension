@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>skim.page Options</title>
+    <script type="module" src="/src/options.ts"></script>
+  </head>
+  <body>
+    <main class="options-shell">
+      <header class="options-header">
+        <p class="eyebrow">skim.page</p>
+        <h1>Defaults</h1>
+        <p>Choose what “Use my defaults” does from the right-click menu.</p>
+      </header>
+
+      <form class="settings-form" id="settings-form">
+        <label class="field">
+          <span>Summary style</span>
+          <select id="style-select" name="styleId"></select>
+        </label>
+
+        <label class="field">
+          <span>AI assistant</span>
+          <select id="provider-select" name="providerId"></select>
+        </label>
+
+        <div class="actions">
+          <button type="submit">Save defaults</button>
+          <p id="status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <section class="custom-section" aria-labelledby="openai-heading">
+        <div class="section-heading">
+          <p class="eyebrow">BYOK</p>
+          <h2 id="openai-heading">In-page summaries</h2>
+          <p class="helper-copy">
+            Your OpenAI API key is stored locally in this browser only. It is never synced.
+          </p>
+        </div>
+
+        <form class="settings-form" id="openai-form">
+          <label class="field">
+            <span>OpenAI API key</span>
+            <input id="openai-api-key" autocomplete="off" placeholder="sk-..." type="password" />
+          </label>
+
+          <label class="field">
+            <span>Model</span>
+            <select id="openai-model-select">
+              <option value="gpt-5.4-mini">gpt-5.4-mini</option>
+              <option value="gpt-5.4">gpt-5.4</option>
+              <option value="gpt-5.5">gpt-5.5</option>
+              <option value="gpt-5">gpt-5</option>
+              <option value="gpt-5-mini">gpt-5-mini</option>
+              <option value="custom">Custom model...</option>
+            </select>
+            <input class="is-hidden" id="openai-model-custom" placeholder="Enter model ID" />
+          </label>
+
+          <label class="checkbox-field">
+            <input id="in-page-enabled" type="checkbox" />
+            <span>Use in-page summaries when a local key is configured</span>
+          </label>
+
+          <label class="checkbox-field">
+            <input id="web-search-enabled" type="checkbox" />
+            <span>Use web search for extra context by default</span>
+          </label>
+
+          <div class="actions">
+            <button type="submit">Save API settings</button>
+            <button class="button-secondary" id="test-openai-key" type="button">Test key</button>
+            <button class="button-secondary" id="remove-openai-key" type="button">Remove key</button>
+          </div>
+          <p id="openai-status" class="subtle-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="custom-section" aria-labelledby="custom-heading">
+        <div class="section-heading">
+          <p class="eyebrow">Custom styles</p>
+          <h2 id="custom-heading">Create your own prompt style</h2>
+        </div>
+
+        <form class="settings-form custom-form" id="custom-style-form">
+          <label class="field">
+            <span>Name</span>
+            <input id="custom-title" maxlength="48" placeholder="Competitive analysis" required />
+          </label>
+
+          <label class="field">
+            <span>Prompt instructions</span>
+            <textarea
+              id="custom-prompt"
+              maxlength="2000"
+              placeholder="Analyze this article for competitors, positioning, risks, and next actions."
+              required
+            ></textarea>
+          </label>
+
+          <div class="actions">
+            <button id="custom-submit" type="submit">Add custom style</button>
+            <button class="button-secondary is-hidden" id="custom-cancel" type="button">Cancel edit</button>
+          </div>
+        </form>
+
+        <div class="custom-list" id="custom-style-list" aria-live="polite"></div>
+      </section>
+    </main>
+  </body>
+</html>

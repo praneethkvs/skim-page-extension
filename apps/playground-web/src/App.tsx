@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { buildPreviewPrompt, lensIds, lenses, type LensId } from './lenses';
 import {
   DEFAULT_PROVIDER_ID,
+  buildPreviewPrompt,
+  lensIds,
+  lenses,
+  parseLocation,
   providerIds,
   providers,
+  type LensId,
+  type ParsedLocation,
   type ProviderId,
-} from './providers';
-import { parseLocation, type ParsedLocation } from './url';
+} from '@skim-page/core';
 
-const SOURCE_URL = 'https://github.com/praneethkvs/skim.page';
-const FEEDBACK_URL = 'https://github.com/praneethkvs/skim.page/issues';
+const SOURCE_URL = 'https://github.com/praneethkvs/skim-page-extension';
+const FEEDBACK_URL = 'https://github.com/praneethkvs/skim-page-extension/issues';
 
 const exampleArticleUrls: Record<LensId, string> = {
   default: 'https://blog.google/innovation-and-ai/technology/ai/google-gemini-ai/',
