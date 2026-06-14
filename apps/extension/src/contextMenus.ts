@@ -174,11 +174,20 @@ function createMenuTree(
   });
 
   if (canSummarizeInPage) {
+    if (source === 'selection') {
+      createContextMenu({
+        id: buildPromptFirstMenuId(source),
+        parentId: rootId,
+        title: 'Ask Anything',
+        contexts: [source],
+      });
+    }
+
     const inPageRootId = buildBranchMenuId(source, 'in-page');
     createContextMenu({
       id: inPageRootId,
       parentId: rootId,
-      title: 'Summarize in page',
+      title: 'Summarize',
       contexts: [source],
     });
     createContextMenu({
@@ -187,14 +196,6 @@ function createMenuTree(
       title: 'Use my defaults',
       contexts: [source],
     });
-    if (source === 'selection') {
-      createContextMenu({
-        id: buildPromptFirstMenuId(source),
-        parentId: inPageRootId,
-        title: 'Open with selected text',
-        contexts: [source],
-      });
-    }
     createInPageStyleMenus(source, styles, inPageRootId);
   } else {
     createContextMenu({

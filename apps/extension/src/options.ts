@@ -50,6 +50,8 @@ const MODEL_OPTION_VALUES = new Set(['gpt-5.4-mini', 'gpt-5.4', 'gpt-5.5', 'gpt-
 let styles: PromptStyle[] = [];
 let customStyles: CustomPromptStyle[] = [];
 let editingStyleId: CustomStyleId | null = null;
+let statusTimer: ReturnType<typeof window.setTimeout> | null = null;
+let openAiStatusTimer: ReturnType<typeof window.setTimeout> | null = null;
 
 void hydrateSettings();
 
@@ -152,19 +154,24 @@ async function persistOpenAiSettings(): Promise<void> {
   });
   await requestContextMenuRefresh();
   await hydrateSettings();
-  showOpenAiStatus(apiKey ? 'Saved local key and API settings.' : 'Saved API settings.');
+  showOpenAiStatus(apiKey ? 'Saved local key and API settings.' : 'Saved API settings.', {
+    tone: 'success',
+  });
 }
 
 async function testOpenAiKeyFromOptions(): Promise<void> {
   await persistOpenAiSettings();
-  showOpenAiStatus('Testing key...');
+  showOpenAiStatus('Testing key...', { tone: 'neutral' });
 
   const response = (await chrome.runtime.sendMessage({
     model: getOpenAiModelValue(),
     type: TEST_OPENAI_KEY_MESSAGE,
   })) as { ok?: boolean; error?: string } | undefined;
 
-  showOpenAiStatus(response?.ok ? 'OpenAI key works.' : response?.error ?? 'Key test failed.');
+  showOpenAiStatus(response?.ok ? 'OpenAI key works.' : response?.error ?? 'Key test failed.', {
+    persist: true,
+    tone: response?.ok ? 'success' : 'error',
+  });
 }
 
 async function removeOpenAiKeyFromOptions(): Promise<void> {
@@ -172,7 +179,7 @@ async function removeOpenAiKeyFromOptions(): Promise<void> {
   await saveOpenAiSettings({ inPageModeEnabled: false });
   await requestContextMenuRefresh();
   await hydrateSettings();
-  showOpenAiStatus('Removed local API key.');
+  showOpenAiStatus('Removed local API key.', { tone: 'success' });
 }
 
 async function saveCustomStyle(): Promise<void> {
@@ -311,16 +318,38 @@ function formatStyleOption(style: PromptStyle): string {
 }
 
 function showStatus(message: string): void {
+  if (statusTimer) {
+    window.clearTimeout(statusTimer);
+  }
+
   statusElement.textContent = message;
-  window.setTimeout(() => {
+  statusTimer = window.setTimeout(() => {
     statusElement.textContent = '';
+    statusTimer = null;
   }, 2200);
 }
 
-function showOpenAiStatus(message: string): void {
+function showOpenAiStatus(
+  message: string,
+  { persist = false, tone = 'neutral' }: { persist?: boolean; tone?: 'neutral' | 'success' | 'error' } = {},
+): void {
+  if (openAiStatusTimer) {
+    window.clearTimeout(openAiStatusTimer);
+    openAiStatusTimer = null;
+  }
+
   openAiStatusElement.textContent = message;
-  window.setTimeout(() => {
+  openAiStatusElement.classList.toggle('subtle-status-success', tone === 'success');
+  openAiStatusElement.classList.toggle('subtle-status-error', tone === 'error');
+
+  if (persist) {
+    return;
+  }
+
+  openAiStatusTimer = window.setTimeout(() => {
     openAiStatusElement.textContent = '';
+    openAiStatusElement.classList.remove('subtle-status-success', 'subtle-status-error');
+    openAiStatusTimer = null;
   }, 3200);
 }
 

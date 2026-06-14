@@ -222,3 +222,11 @@ button:hover {
   color: #0f8a5f;
   font-size: 14px;
 }
+
+.subtle-status-success {
+  color: #0f8a5f;
+}
+
+.subtle-status-error {
+  color: #b42318;
+}

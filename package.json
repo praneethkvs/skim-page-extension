@@ -12,9 +12,10 @@
     "build": "npm --workspace @skim-page/playground-web run build && npm --workspace @skim-page/extension run build",
     "build:extension": "npm --workspace @skim-page/extension run build",
     "check:extension": "node scripts/check-extension-build.mjs",
-    "test": "npm run test:core && npm run test:extension-storage && npm run build:extension && npm run check:extension",
+    "test": "npm run test:core && npm run test:extension-storage && npm run test:openai-streaming && npm run build:extension && npm run check:extension",
     "test:core": "node scripts/test-core-prompts.mjs",
     "test:extension-storage": "node scripts/test-extension-storage.mjs",
+    "test:openai-streaming": "node scripts/test-openai-streaming.mjs",
     "preview": "npm --workspace @skim-page/playground-web run preview"
   },
   "dependencies": {

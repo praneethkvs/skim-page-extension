@@ -30,6 +30,8 @@ type VisibleConversationItem =
       content: string;
     };
 
+type PanelResizeEdge = 'n' | 'e' | 's' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+
 const PANEL_ID = 'skim-page-panel-root';
 const OPEN_PANEL_MESSAGE = 'skim-page:open-panel';
 const SUMMARIZE_MESSAGE = 'skim-page:summarize';
@@ -47,6 +49,8 @@ const LOCAL_SUMMARY_TIMEOUT_MS = 50000;
 const LOCAL_WEB_SEARCH_TIMEOUT_MS = 80000;
 const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
 const BARE_URL_PATTERN = /https?:\/\/[^\s<>"')\]]+/g;
+const INLINE_MARKDOWN_PATTERN = /(\*\*|__)([^\n*_](?:[\s\S]*?[^\n*_])?)\1/g;
+const PANEL_VIEWPORT_MARGIN = 8;
 
 (globalThis as { __SKIM_PAGE_PANEL_READY__?: boolean }).__SKIM_PAGE_PANEL_READY__ = true;
 
@@ -75,10 +79,23 @@ let localTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 let isPanelCollapsed = false;
 let dragState:
   | {
+      moved: boolean;
       offsetX: number;
       offsetY: number;
     }
   | null = null;
+let resizeState:
+  | {
+      edge: PanelResizeEdge;
+      startX: number;
+      startY: number;
+      startLeft: number;
+      startTop: number;
+      startWidth: number;
+      startHeight: number;
+    }
+  | null = null;
+let suppressNextPanelClick = false;
 
 chrome.runtime.onMessage.addListener((message) => {
   if (isOpenPanelMessage(message)) {
@@ -137,6 +154,7 @@ function ensurePanel(): void {
   panel.id = PANEL_ID;
   panel.innerHTML = `
     <header class="skim-page-panel-header">
+      <span class="skim-page-collapsed-mark" aria-hidden="true">s.</span>
       <div>
         <p>skim.page</p>
         <h2>In-page summary</h2>
@@ -180,8 +198,17 @@ function ensurePanel(): void {
       <button id="skim-page-regenerate" type="button">Regenerate</button>
       <button id="skim-page-provider" type="button">Open in provider</button>
     </div>
+    <span class="skim-page-resize-handle skim-page-resize-n" data-resize-edge="n" aria-hidden="true"></span>
+    <span class="skim-page-resize-handle skim-page-resize-e" data-resize-edge="e" aria-hidden="true"></span>
+    <span class="skim-page-resize-handle skim-page-resize-s" data-resize-edge="s" aria-hidden="true"></span>
+    <span class="skim-page-resize-handle skim-page-resize-w" data-resize-edge="w" aria-hidden="true"></span>
+    <span class="skim-page-resize-handle skim-page-resize-ne" data-resize-edge="ne" aria-hidden="true"></span>
+    <span class="skim-page-resize-handle skim-page-resize-nw" data-resize-edge="nw" aria-hidden="true"></span>
+    <span class="skim-page-resize-handle skim-page-resize-se" data-resize-edge="se" aria-hidden="true"></span>
+    <span class="skim-page-resize-handle skim-page-resize-sw" data-resize-edge="sw" aria-hidden="true"></span>
   `;
   document.documentElement.append(panel);
+  new ResizeObserver(clampPanelToViewport).observe(panel);
 
   outputElement = requirePanelElement<HTMLDivElement>('#skim-page-output');
   statusElement = requirePanelElement<HTMLParagraphElement>('#skim-page-status');
@@ -191,11 +218,23 @@ function ensurePanel(): void {
   followUpForm = requirePanelElement<HTMLFormElement>('#skim-page-followup');
   followUpInput = requirePanelElement<HTMLInputElement>('#skim-page-followup-input');
 
-  requirePanelElement<HTMLElement>('.skim-page-panel-header').addEventListener('pointerdown', startPanelDrag);
-  requirePanelElement<HTMLButtonElement>('#skim-page-collapse').addEventListener('click', () => {
+  const panelHeader = requirePanelElement<HTMLElement>('.skim-page-panel-header');
+  panelHeader.addEventListener('pointerdown', startPanelDrag);
+  panelHeader.addEventListener('click', (event) => {
+    if (event.target instanceof HTMLElement && event.target.closest('button')) {
+      return;
+    }
+
+    if (isPanelCollapsed && !suppressNextPanelClick) {
+      setPanelCollapsed(false);
+    }
+  });
+  requirePanelElement<HTMLButtonElement>('#skim-page-collapse').addEventListener('click', (event) => {
+    event.stopPropagation();
     setPanelCollapsed(!isPanelCollapsed);
   });
-  requirePanelElement<HTMLButtonElement>('#skim-page-close').addEventListener('click', () => {
+  requirePanelElement<HTMLButtonElement>('#skim-page-close').addEventListener('click', (event) => {
+    event.stopPropagation();
     void cancelActiveSummaryRequest();
     clearRequestTimers();
     panel?.classList.add('skim-page-panel-hidden');
@@ -227,6 +266,9 @@ function ensurePanel(): void {
   });
   modelSelect.addEventListener('change', () => {
     syncPanelCustomModelVisibility();
+  });
+  panel.querySelectorAll<HTMLElement>('[data-resize-edge]').forEach((handle) => {
+    handle.addEventListener('pointerdown', startPanelResize);
   });
 }
 
@@ -446,7 +488,7 @@ function appendLinkedText(container: HTMLElement, text: string, startIndex: numb
     const [rawLink, label, href] = match;
 
     if (match.index > cursor) {
-      appendBareUrlText(container, text.slice(cursor, match.index));
+      appendInlineMarkdownText(container, text.slice(cursor, match.index));
     }
 
     container.append(createSafeLink(href, label));
@@ -454,7 +496,35 @@ function appendLinkedText(container: HTMLElement, text: string, startIndex: numb
   }
 
   if (cursor < endIndex) {
-    appendBareUrlText(container, text.slice(cursor, endIndex));
+    appendInlineMarkdownText(container, text.slice(cursor, endIndex));
+  }
+}
+
+function appendInlineMarkdownText(container: HTMLElement, text: string): void {
+  INLINE_MARKDOWN_PATTERN.lastIndex = 0;
+  let cursor = 0;
+
+  while (true) {
+    const match = INLINE_MARKDOWN_PATTERN.exec(text);
+
+    if (!match) {
+      break;
+    }
+
+    const [rawText, , boldText] = match;
+
+    if (match.index > cursor) {
+      appendBareUrlText(container, text.slice(cursor, match.index));
+    }
+
+    const strong = document.createElement('strong');
+    appendBareUrlText(strong, boldText);
+    container.append(strong);
+    cursor = match.index + rawText.length;
+  }
+
+  if (cursor < text.length) {
+    appendBareUrlText(container, text.slice(cursor));
   }
 }
 
@@ -641,6 +711,7 @@ function startPanelDrag(event: PointerEvent): void {
 
   const rect = panel.getBoundingClientRect();
   dragState = {
+    moved: false,
     offsetX: event.clientX - rect.left,
     offsetY: event.clientY - rect.top,
   };
@@ -660,6 +731,7 @@ function movePanel(event: PointerEvent): void {
     return;
   }
 
+  dragState.moved = true;
   const rect = panel.getBoundingClientRect();
   const nextLeft = clamp(event.clientX - dragState.offsetX, 8, window.innerWidth - rect.width - 8);
   const nextTop = clamp(event.clientY - dragState.offsetY, 8, window.innerHeight - rect.height - 8);
@@ -673,6 +745,7 @@ function stopPanelDrag(event: PointerEvent): void {
     return;
   }
 
+  const moved = dragState?.moved ?? false;
   dragState = null;
   panel.classList.remove('skim-page-panel-dragging');
   if (panel.hasPointerCapture(event.pointerId)) {
@@ -681,6 +754,115 @@ function stopPanelDrag(event: PointerEvent): void {
   panel.removeEventListener('pointermove', movePanel);
   panel.removeEventListener('pointerup', stopPanelDrag);
   panel.removeEventListener('pointercancel', stopPanelDrag);
+
+  if (moved) {
+    suppressNextPanelClick = true;
+    setTimeout(() => {
+      suppressNextPanelClick = false;
+    }, 0);
+  }
+}
+
+function startPanelResize(event: PointerEvent): void {
+  if (!panel || event.button !== 0 || isPanelCollapsed) {
+    return;
+  }
+
+  const target = event.currentTarget;
+  const edge = target instanceof HTMLElement ? target.dataset.resizeEdge : undefined;
+
+  if (!isPanelResizeEdge(edge)) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const rect = panel.getBoundingClientRect();
+  resizeState = {
+    edge,
+    startX: event.clientX,
+    startY: event.clientY,
+    startLeft: rect.left,
+    startTop: rect.top,
+    startWidth: rect.width,
+    startHeight: rect.height,
+  };
+
+  panel.classList.add('skim-page-panel-resizing');
+  panel.style.left = `${rect.left}px`;
+  panel.style.top = `${rect.top}px`;
+  panel.style.width = `${rect.width}px`;
+  panel.style.height = `${rect.height}px`;
+  panel.style.right = 'auto';
+  panel.style.bottom = 'auto';
+  panel.setPointerCapture(event.pointerId);
+  panel.addEventListener('pointermove', resizePanel);
+  panel.addEventListener('pointerup', stopPanelResize);
+  panel.addEventListener('pointercancel', stopPanelResize);
+}
+
+function resizePanel(event: PointerEvent): void {
+  if (!panel || !resizeState) {
+    return;
+  }
+
+  const { maxHeight, maxWidth, minHeight, minWidth } = getPanelResizeLimits();
+  const deltaX = event.clientX - resizeState.startX;
+  const deltaY = event.clientY - resizeState.startY;
+  let nextLeft = resizeState.startLeft;
+  let nextTop = resizeState.startTop;
+  let nextWidth = resizeState.startWidth;
+  let nextHeight = resizeState.startHeight;
+
+  if (resizeState.edge.includes('e')) {
+    nextWidth = clamp(
+      resizeState.startWidth + deltaX,
+      minWidth,
+      window.innerWidth - PANEL_VIEWPORT_MARGIN - resizeState.startLeft,
+    );
+  }
+
+  if (resizeState.edge.includes('s')) {
+    nextHeight = clamp(
+      resizeState.startHeight + deltaY,
+      minHeight,
+      window.innerHeight - PANEL_VIEWPORT_MARGIN - resizeState.startTop,
+    );
+  }
+
+  if (resizeState.edge.includes('w')) {
+    const maxWidthFromRight = resizeState.startLeft + resizeState.startWidth - PANEL_VIEWPORT_MARGIN;
+    nextWidth = clamp(resizeState.startWidth - deltaX, minWidth, Math.min(maxWidth, maxWidthFromRight));
+    nextLeft = resizeState.startLeft + (resizeState.startWidth - nextWidth);
+  }
+
+  if (resizeState.edge.includes('n')) {
+    const maxHeightFromBottom = resizeState.startTop + resizeState.startHeight - PANEL_VIEWPORT_MARGIN;
+    nextHeight = clamp(resizeState.startHeight - deltaY, minHeight, Math.min(maxHeight, maxHeightFromBottom));
+    nextTop = resizeState.startTop + (resizeState.startHeight - nextHeight);
+  }
+
+  panel.style.left = `${nextLeft}px`;
+  panel.style.top = `${nextTop}px`;
+  panel.style.width = `${nextWidth}px`;
+  panel.style.height = `${nextHeight}px`;
+}
+
+function stopPanelResize(event: PointerEvent): void {
+  if (!panel) {
+    return;
+  }
+
+  resizeState = null;
+  panel.classList.remove('skim-page-panel-resizing');
+  if (panel.hasPointerCapture(event.pointerId)) {
+    panel.releasePointerCapture(event.pointerId);
+  }
+  panel.removeEventListener('pointermove', resizePanel);
+  panel.removeEventListener('pointerup', stopPanelResize);
+  panel.removeEventListener('pointercancel', stopPanelResize);
+  requestAnimationFrame(clampPanelToViewport);
 }
 
 function clampPanelToViewport(): void {
@@ -689,11 +871,48 @@ function clampPanelToViewport(): void {
   }
 
   const rect = panel.getBoundingClientRect();
-  const nextLeft = clamp(rect.left, 8, window.innerWidth - rect.width - 8);
-  const nextTop = clamp(rect.top, 8, window.innerHeight - rect.height - 8);
+  const nextLeft = clamp(
+    rect.left,
+    PANEL_VIEWPORT_MARGIN,
+    window.innerWidth - rect.width - PANEL_VIEWPORT_MARGIN,
+  );
+  const nextTop = clamp(
+    rect.top,
+    PANEL_VIEWPORT_MARGIN,
+    window.innerHeight - rect.height - PANEL_VIEWPORT_MARGIN,
+  );
 
   panel.style.left = `${nextLeft}px`;
   panel.style.top = `${nextTop}px`;
+}
+
+function getPanelResizeLimits(): {
+  maxHeight: number;
+  maxWidth: number;
+  minHeight: number;
+  minWidth: number;
+} {
+  if (!panel) {
+    return {
+      maxHeight: window.innerHeight - PANEL_VIEWPORT_MARGIN * 2,
+      maxWidth: window.innerWidth - PANEL_VIEWPORT_MARGIN * 2,
+      minHeight: 320,
+      minWidth: 320,
+    };
+  }
+
+  const style = getComputedStyle(panel);
+
+  return {
+    maxHeight: window.innerHeight - PANEL_VIEWPORT_MARGIN * 2,
+    maxWidth: window.innerWidth - PANEL_VIEWPORT_MARGIN * 2,
+    minHeight: Number.parseFloat(style.minHeight) || 320,
+    minWidth: Number.parseFloat(style.minWidth) || 320,
+  };
+}
+
+function isPanelResizeEdge(value: string | undefined): value is PanelResizeEdge {
+  return value === 'n' || value === 'e' || value === 's' || value === 'w' || value === 'ne' || value === 'nw' || value === 'se' || value === 'sw';
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -724,25 +943,46 @@ function injectStyles(): void {
       bottom: 18px;
       z-index: 2147483647;
       display: grid;
-      gap: 12px;
-      width: min(420px, calc(100vw - 36px));
-      min-width: 0;
-      max-height: min(680px, calc(100vh - 36px));
-      padding: 16px;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+      gap: 9px;
+      width: min(460px, calc(100vw - 36px));
+      height: min(680px, calc(100vh - 36px));
+      min-width: min(360px, calc(100vw - 36px));
+      min-height: min(420px, calc(100vh - 36px));
+      max-width: calc(100vw - 16px);
+      max-height: calc(100vh - 16px);
+      padding: 12px;
       border: 1px solid #dedede;
       border-radius: 10px;
       background: #fff;
       box-shadow: 0 20px 60px rgba(17, 17, 17, 0.18);
       color: #111;
       overflow: hidden;
+      resize: none;
+      font-size: 13px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     #${PANEL_ID}.skim-page-panel-hidden { display: none; }
     #${PANEL_ID}.skim-page-panel-collapsed {
-      gap: 8px;
-      width: min(320px, calc(100vw - 36px));
-      max-height: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 58px;
+      min-width: 58px;
+      max-width: 58px;
+      height: 58px;
+      min-height: 58px;
+      max-height: 58px;
+      padding: 0;
+      border-color: #111;
+      border-radius: 999px;
+      background: #111;
+      box-shadow: 0 14px 36px rgba(17, 17, 17, 0.24);
+      resize: none;
     }
+    #${PANEL_ID}.skim-page-panel-collapsed .skim-page-panel-header > div,
+    #${PANEL_ID}.skim-page-panel-collapsed .skim-page-window-actions,
+    #${PANEL_ID}.skim-page-panel-collapsed .skim-page-status,
     #${PANEL_ID}.skim-page-panel-collapsed .skim-page-controls,
     #${PANEL_ID}.skim-page-panel-collapsed .skim-page-output,
     #${PANEL_ID}.skim-page-panel-collapsed .skim-page-followup,
@@ -752,21 +992,108 @@ function injectStyles(): void {
     #${PANEL_ID}.skim-page-panel-dragging {
       user-select: none;
     }
+    #${PANEL_ID}.skim-page-panel-resizing {
+      user-select: none;
+    }
+    .skim-page-resize-handle {
+      position: absolute;
+      z-index: 2;
+      display: block;
+      touch-action: none;
+      background: transparent;
+    }
+    #${PANEL_ID}.skim-page-panel-collapsed .skim-page-resize-handle {
+      display: none;
+    }
+    .skim-page-resize-n {
+      top: 0;
+      left: 14px;
+      right: 14px;
+      height: 8px;
+      cursor: ns-resize;
+    }
+    .skim-page-resize-e {
+      top: 14px;
+      right: 0;
+      bottom: 14px;
+      width: 8px;
+      cursor: ew-resize;
+    }
+    .skim-page-resize-s {
+      right: 14px;
+      bottom: 0;
+      left: 14px;
+      height: 8px;
+      cursor: ns-resize;
+    }
+    .skim-page-resize-w {
+      top: 14px;
+      bottom: 14px;
+      left: 0;
+      width: 8px;
+      cursor: ew-resize;
+    }
+    .skim-page-resize-ne,
+    .skim-page-resize-nw,
+    .skim-page-resize-se,
+    .skim-page-resize-sw {
+      width: 14px;
+      height: 14px;
+    }
+    .skim-page-resize-ne {
+      top: 0;
+      right: 0;
+      cursor: nesw-resize;
+    }
+    .skim-page-resize-nw {
+      top: 0;
+      left: 0;
+      cursor: nwse-resize;
+    }
+    .skim-page-resize-se {
+      right: 0;
+      bottom: 0;
+      cursor: nwse-resize;
+    }
+    .skim-page-resize-sw {
+      bottom: 0;
+      left: 0;
+      cursor: nesw-resize;
+    }
     .skim-page-panel-header {
       display: flex;
       align-items: start;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       cursor: grab;
       touch-action: none;
+    }
+    .skim-page-collapsed-mark {
+      display: none;
+    }
+    #${PANEL_ID}.skim-page-panel-collapsed .skim-page-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+    #${PANEL_ID}.skim-page-panel-collapsed .skim-page-collapsed-mark {
+      display: block;
+      color: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: 1;
     }
     #${PANEL_ID}.skim-page-panel-dragging .skim-page-panel-header {
       cursor: grabbing;
     }
     .skim-page-panel-header p {
-      margin: 0 0 4px;
+      margin: 0 0 3px;
       color: #e8390e;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -774,22 +1101,23 @@ function injectStyles(): void {
     .skim-page-panel-header h2 {
       margin: 0;
       color: #111;
-      font-size: 20px;
+      font-size: 18px;
       line-height: 1.1;
     }
     .skim-page-icon-button {
-      width: 32px;
-      min-width: 32px;
-      height: 32px;
+      width: 28px;
+      min-width: 28px;
+      height: 28px;
       border: 1px solid #dedede;
       border-radius: 999px;
       background: #fff;
       color: #111;
       cursor: pointer;
+      font-size: 13px;
     }
     .skim-page-window-actions {
       display: flex;
-      gap: 7px;
+      gap: 6px;
     }
     .skim-page-window-actions button {
       flex: 0 0 auto;
@@ -797,26 +1125,26 @@ function injectStyles(): void {
     .skim-page-status {
       margin: 0;
       color: #686868;
-      font-size: 13px;
+      font-size: 12px;
     }
     .skim-page-controls {
       display: grid;
       grid-template-columns: minmax(0, 1fr) max-content;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
-      padding: 12px;
+      padding: 9px 10px;
       border: 1px solid #ebebeb;
       border-radius: 8px;
       background: #fafafa;
     }
     .skim-page-control-group {
       display: grid;
-      gap: 7px;
+      gap: 5px;
       min-width: 0;
     }
     .skim-page-control-label {
       color: #686868;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -836,9 +1164,9 @@ function injectStyles(): void {
       content: "";
       position: absolute;
       top: 50%;
-      right: 11px;
-      width: 7px;
-      height: 7px;
+      right: 10px;
+      width: 6px;
+      height: 6px;
       border-right: 2px solid #5f5f5f;
       border-bottom: 2px solid #5f5f5f;
       pointer-events: none;
@@ -847,16 +1175,16 @@ function injectStyles(): void {
     .skim-page-custom-model-input,
     .skim-page-select-wrap select {
       box-sizing: border-box;
-      min-height: 38px;
+      min-height: 34px;
       width: 100%;
       min-width: 0;
-      padding: 0 34px 0 12px;
+      padding: 0 30px 0 10px;
       border: 1px solid #d8d8d8;
       border-radius: 7px;
       background: #fff;
       color: #111;
       font: inherit;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 650;
       line-height: 1;
       outline: none;
@@ -881,9 +1209,9 @@ function injectStyles(): void {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      min-height: 38px;
-      padding: 0 12px 0 10px;
+      gap: 7px;
+      min-height: 34px;
+      padding: 0 10px 0 9px;
       border: 1px solid #d8d8d8;
       border-radius: 999px;
       background: #fff;
@@ -891,7 +1219,7 @@ function injectStyles(): void {
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 750;
       transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
     }
@@ -902,9 +1230,9 @@ function injectStyles(): void {
     }
     .skim-page-switch {
       position: relative;
-      width: 32px;
-      min-width: 32px;
-      height: 18px;
+      width: 28px;
+      min-width: 28px;
+      height: 16px;
       border-radius: 999px;
       background: #d7d7d7;
       transition: background 120ms ease;
@@ -914,8 +1242,8 @@ function injectStyles(): void {
       position: absolute;
       top: 3px;
       left: 3px;
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 999px;
       background: #fff;
       box-shadow: 0 1px 3px rgba(17, 17, 17, 0.22);
@@ -930,7 +1258,7 @@ function injectStyles(): void {
       background: #e8390e;
     }
     .skim-page-web-search-field:has(input:checked) .skim-page-switch::after {
-      transform: translateX(14px);
+      transform: translateX(12px);
     }
     .skim-page-web-search-field:has(input:focus-visible) {
       box-shadow: 0 0 0 3px rgba(232, 57, 14, 0.14);
@@ -947,34 +1275,36 @@ function injectStyles(): void {
       }
     }
     .skim-page-output {
-      display: grid;
-      align-content: start;
-      gap: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 9px;
       overflow-x: hidden;
       overflow-y: auto;
       min-width: 0;
-      min-height: 160px;
-      max-height: 340px;
-      padding: 12px;
+      min-height: 0;
+      max-height: none;
+      padding: 10px;
       border: 1px solid #ebebeb;
       border-radius: 8px;
       background: #fafafa;
       color: #111;
-      font-size: 14px;
-      line-height: 1.55;
+      font-size: 13px;
+      line-height: 1.45;
       white-space: pre-wrap;
     }
     .skim-page-message {
       display: grid;
-      gap: 5px;
+      gap: 4px;
+      flex: 0 0 auto;
       min-width: 0;
       max-width: 100%;
-      overflow: hidden;
+      overflow: visible;
     }
     .skim-page-message-label {
       margin: 0;
       color: #686868;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
       letter-spacing: 0.06em;
       line-height: 1.2;
@@ -985,15 +1315,21 @@ function injectStyles(): void {
       max-width: 100%;
       min-width: 0;
       box-sizing: border-box;
-      padding: 10px 12px;
+      padding: 8px 10px;
       border: 1px solid #e4e4e4;
       border-radius: 8px;
       background: #fff;
       color: #111;
+      height: auto;
+      max-height: none;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       word-break: break-word;
       overflow-x: hidden;
+      overflow-y: visible;
+    }
+    .skim-page-message-body strong {
+      font-weight: 800;
     }
     .skim-page-message-body a {
       color: #d5320d;
@@ -1032,32 +1368,34 @@ function injectStyles(): void {
     .skim-page-followup {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
+      gap: 7px;
     }
     .skim-page-followup input {
-      min-height: 38px;
-      padding: 0 10px;
+      min-height: 34px;
+      padding: 0 9px;
       border: 1px solid #cfcfcf;
       border-radius: 6px;
       color: #111;
       font: inherit;
+      font-size: 13px;
     }
     .skim-page-followup button,
     .skim-page-panel-actions button {
-      min-height: 38px;
-      padding: 0 12px;
+      min-height: 34px;
+      padding: 0 10px;
       border: 0;
       border-radius: 6px;
       background: #111;
       color: #fff;
       cursor: pointer;
       font: inherit;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 680;
     }
     .skim-page-panel-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 7px;
     }
     .skim-page-panel-actions button {
       border: 1px solid #cfcfcf;
